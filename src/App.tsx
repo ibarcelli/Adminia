@@ -4,14 +4,8 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminLayout } from './components/layout/AdminLayout'
 import { LoginPage } from './pages/LoginPage'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
-
-function BuildingDetail() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Detalle del Edificio</h1></div>
-}
-
-function BuildingPeriod() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Wizard Mensual</h1></div>
-}
+import { BuildingView } from './pages/admin/BuildingView'
+import { PeriodWizard } from './pages/admin/PeriodWizard'
 
 function BuildingReconcile() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Conciliación Bancaria</h1></div>
@@ -52,8 +46,8 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/buildings/:id" element={<BuildingDetail />} />
-              <Route path="/admin/buildings/:id/period" element={<BuildingPeriod />} />
+              <Route path="/admin/buildings/:id" element={<BuildingView />} />
+              <Route path="/admin/buildings/:id/period" element={<PeriodWizard />} />
               <Route path="/admin/buildings/:id/reconcile" element={<BuildingReconcile />} />
               <Route path="/admin/buildings/:id/arrears" element={<BuildingArrears />} />
               <Route path="/admin/buildings/:id/settings" element={<BuildingSettings />} />
