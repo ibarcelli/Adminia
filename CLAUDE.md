@@ -26,6 +26,8 @@ Limitaciones:
 Siguiente paso sugerido:
 ```
 
+10. **Dev server siempre corriendo.** Después de completar cualquier tarea que modifique código frontend, verificar que el dev server está corriendo (`npm run dev`). Si no está corriendo, levantarlo. El servidor corre en puerto 6100.
+
 ## Stack Técnico
 - Frontend: React 18 + TypeScript + Tailwind CSS + Vite
 - Backend: Supabase (Postgres + Auth + RLS)
