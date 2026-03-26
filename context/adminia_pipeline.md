@@ -21,7 +21,7 @@ Producto SaaS vertical / herramienta interna web
 - **DoD:** La dueña puede importar un extracto, confirmar matches, y los condóminos que pagaron tienen recibo generado. Los morosos aparecen marcados.
 
 ### Fase 4: Portal Condómino
-- **Status:** PENDIENTE
+- **Status:** COMPLETADO (STORY-015 a STORY-018)
 - **Objetivo:** Portal web para condóminos con magic link, estado de cuenta, historial, desglose, descarga de recibo
 - **DoD:** Un condómino puede acceder via magic link, ver su estado de cuenta actual, revisar historial y descargar su recibo en PDF.
 

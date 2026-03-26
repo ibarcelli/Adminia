@@ -2,27 +2,19 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './components/AuthProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminLayout } from './components/layout/AdminLayout'
+import { PortalLayout } from './components/layout/PortalLayout'
 import { LoginPage } from './pages/LoginPage'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
 import { BuildingView } from './pages/admin/BuildingView'
 import { PeriodWizard } from './pages/admin/PeriodWizard'
 import { ReconcilePage } from './pages/admin/ReconcilePage'
 import { ArrearsPage } from './pages/admin/ArrearsPage'
+import { PortalStatement } from './pages/portal/PortalStatement'
+import { PortalHistory } from './pages/portal/PortalHistory'
+import { PortalBuilding } from './pages/portal/PortalBuilding'
 
 function BuildingSettings() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Configuración del Edificio</h1></div>
-}
-
-function PortalHome() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Portal Condómino</h1></div>
-}
-
-function PortalHistory() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Historial de Pagos</h1></div>
-}
-
-function PortalBuilding() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Ingresos y Egresos del Edificio</h1></div>
 }
 
 export default function App() {
@@ -48,10 +40,14 @@ export default function App() {
             </Route>
           </Route>
 
-          {/* Portal Condómino (no protection yet — STORY-015) */}
-          <Route path="/portal" element={<PortalHome />} />
-          <Route path="/portal/history" element={<PortalHistory />} />
-          <Route path="/portal/building" element={<PortalBuilding />} />
+          {/* Portal Condómino (protected) */}
+          <Route element={<ProtectedRoute allowedRoles={['condo']} />}>
+            <Route element={<PortalLayout />}>
+              <Route path="/portal" element={<PortalStatement />} />
+              <Route path="/portal/history" element={<PortalHistory />} />
+              <Route path="/portal/building" element={<PortalBuilding />} />
+            </Route>
+          </Route>
         </Routes>
       </AuthProvider>
     </BrowserRouter>
