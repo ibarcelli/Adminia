@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 2 — Core Admin
 - **Última actualización:** 2026-03-25
-- **Historia actual:** STORY-007b completada
+- **Historia actual:** STORY-008 y STORY-009 completadas
 
 ## Resumen
 - Reason: COMPLETADO
@@ -19,16 +19,23 @@
 - **STORY-005:** Dashboard admin — lista de edificios — COMPLETADO
 - **STORY-007:** Wizard mensual — Paso 1: Lectura de agua — COMPLETADO
 - **STORY-007b:** Refactor wizard agua — dos modalidades — COMPLETADO
-  - Migration 003: enum water_metering_type, tabla unit_water_readings
-  - Modalidad general: lectura general + costo → prorrateo por m² (sin cambios)
-  - Modalidad individual: tabla con lecturas por depto, consumo en tiempo real, costo por m³
-  - Auto-fill de lecturas anteriores del periodo previo
-  - DEC-012 documentada, features.md y database.ts actualizados
-  - Torre Miraflores marcada como 'individual' en seed
+- **STORY-008:** Wizard mensual — Paso 2: Registro de gastos — COMPLETADO
+  - useExpenses hook: CRUD completo, totalExpenses en tiempo real
+  - Lista editable inline con concepto, monto, categoría (Fijo/Variable)
+  - Gastos se persisten en Supabase al agregar/editar/eliminar
+  - Categoría 'water' excluida del selector
+- **STORY-009:** Wizard mensual — Paso 3: Prorrateo automático — COMPLETADO
+  - useStatements hook: generateStatements con prorrateo dual
+  - Modalidad general: agua por m² | Modalidad individual: agua por consumo real
+  - Gastos siempre prorrateados por m²
+  - Saldo anterior del periodo previo (statements no pagados)
+  - Tabla con desglose por depto: agua, gastos, saldo anterior, total
+  - Validación de cuadre (agua y gastos vs totales)
+  - Botón recalcular
 
 ## Próxima Acción
-- Ives ejecuta 003_water_metering.sql en Supabase SQL Editor
-- STORY-008: Wizard mensual — Paso 2: Registro de gastos
+- STORY-010: Wizard mensual — Paso 4: Publicar estados de cuenta
+- Ives ejecuta migrations en Supabase para testing real
 
 ## Blockers
-- Pendiente: Ives ejecuta migrations en Supabase para testing real
+- Pendiente: Ives ejecuta migrations y seeds en Supabase
