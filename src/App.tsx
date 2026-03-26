@@ -1,11 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './components/AuthProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminLayout } from './components/layout/AdminLayout'
 import { LoginPage } from './pages/LoginPage'
-
-function AdminDashboard() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Dashboard Admin</h1></div>
-}
+import { AdminDashboard } from './pages/admin/AdminDashboard'
 
 function BuildingDetail() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Detalle del Edificio</h1></div>
@@ -50,14 +48,16 @@ export default function App() {
           {/* Auth */}
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Admin (protected) */}
+          {/* Admin (protected + layout) */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/buildings/:id" element={<BuildingDetail />} />
-            <Route path="/admin/buildings/:id/period" element={<BuildingPeriod />} />
-            <Route path="/admin/buildings/:id/reconcile" element={<BuildingReconcile />} />
-            <Route path="/admin/buildings/:id/arrears" element={<BuildingArrears />} />
-            <Route path="/admin/buildings/:id/settings" element={<BuildingSettings />} />
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/buildings/:id" element={<BuildingDetail />} />
+              <Route path="/admin/buildings/:id/period" element={<BuildingPeriod />} />
+              <Route path="/admin/buildings/:id/reconcile" element={<BuildingReconcile />} />
+              <Route path="/admin/buildings/:id/arrears" element={<BuildingArrears />} />
+              <Route path="/admin/buildings/:id/settings" element={<BuildingSettings />} />
+            </Route>
           </Route>
 
           {/* Portal Condómino (no protection yet — STORY-015) */}

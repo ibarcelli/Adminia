@@ -1,9 +1,9 @@
 # Adminia — STATUS
 
 ## Estado Actual
-- **Fase:** 1 — Foundation
+- **Fase:** 2 — Core Admin
 - **Última actualización:** 2026-03-25
-- **Historia actual:** STORY-003 y STORY-004 completadas
+- **Historia actual:** STORY-005 completada
 
 ## Resumen
 - Reason: COMPLETADO
@@ -15,25 +15,19 @@
 - **STORY-001:** Scaffold del proyecto — COMPLETADO
 - **STORY-002:** Esquema de base de datos — COMPLETADO
 - **STORY-003:** Autenticación admin — COMPLETADO
-  - useAuth hook con signIn/signOut y escucha de sesión
-  - AuthProvider context para toda la app
-  - ProtectedRoute con validación de roles
-  - LoginPage con formulario, error handling, redirect automático
-  - Rutas /admin/* protegidas, /portal/* abiertas (STORY-015)
-  - seed_admin.sql con instrucciones para Ives
 - **STORY-004:** Seed data de prueba — COMPLETADO
-  - 1 organización (Adminia)
-  - 3 edificios: Los Olivos (6), Torre Miraflores (20), San Borja (47) = 73 deptos
-  - Nombres peruanos realistas, m² variados
-  - 2 periodos para Los Olivos (enero closed, febrero draft)
-  - 5 gastos para enero (limpieza, seguridad, ascensor, luz, agua)
-  - 6 statements con prorrateo correcto por m² (4 paid, 2 pending)
+- **STORY-005:** Dashboard admin — lista de edificios — COMPLETADO
+  - AdminLayout con sidebar (edificios, cerrar sesión) + contenido principal
+  - Sidebar responsive: colapsable con hamburger menu en mobile
+  - useBuildings hook: fetch de edificios con periodo más reciente
+  - BuildingCard: nombre, dirección, total_units, status badge
+  - StatusBadge reutilizable: period, statement, match con colores
+  - AdminDashboard: grid responsive de cards, loading, empty state
+  - Rutas admin anidadas dentro de AdminLayout
 
 ## Próxima Acción
-- Ives ejecuta 001_initial_schema.sql en Supabase SQL Editor
-- Ives crea usuario admin en Supabase Auth y ejecuta seed_admin.sql
-- Ives ejecuta 002_seed_data.sql en Supabase SQL Editor
-- STORY-005: Dashboard admin — lista de edificios
+- STORY-006: Configuración de edificio (settings)
+- STORY-007: Wizard mensual — Paso 1: Lectura de agua
 
 ## Blockers
-- Pendiente: Ives ejecuta migrations y seeds en Supabase
+- Pendiente: Ives ejecuta migrations y seeds en Supabase para testing real

@@ -6,12 +6,12 @@ Producto SaaS vertical / herramienta interna web
 ## Fases
 
 ### Fase 1: Foundation (Infraestructura base)
-- **Status:** EN PROGRESO (STORY-001 completada)
+- **Status:** COMPLETADO (STORY-001 a STORY-004)
 - **Objetivo:** Repo, proyecto Supabase, proyecto Vercel, esquema de base de datos, autenticación funcionando
 - **DoD:** Admin puede hacer login. Supabase tiene todas las tablas creadas. Deploy automático en Vercel funciona.
 
 ### Fase 2: Core Admin (Ciclo mensual del admin)
-- **Status:** PENDIENTE
+- **Status:** EN PROGRESO (STORY-005 completada)
 - **Objetivo:** Dashboard admin con el flujo completo: edificios, departamentos, lectura de agua, gastos, prorrateo automático, estados de cuenta
 - **DoD:** La dueña puede completar el ciclo de prorrateo para un edificio desde el dashboard. Estados de cuenta se generan automáticamente.
 
