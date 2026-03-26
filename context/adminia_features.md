@@ -198,12 +198,13 @@ consumo_total = sum(consumo_todos_deptos)
 agua_depto = costo_total_agua * (consumo_depto / consumo_total)
 ```
 
-### Prorrateo de gastos (igual en ambas modalidades)
+### Cuota fija mensual (DEC-014)
 ```
-gastos_por_m2 = sum(gastos_mes) / sum(m2_todos_deptos)
-gastos_depto = gastos_por_m2 * m2_depto
+cuota_fija = valor definido por la admin (igual para todos los deptos)
+referencia_prorrateo = sum(gastos_mes) / num_deptos_activos  (solo informativo)
+déficit = (cuota_fija * num_deptos) - sum(gastos_mes)
 
-total_depto = agua_depto + gastos_depto + saldo_anterior
+total_depto = agua_depto + cuota_fija + saldo_anterior
 ```
 
 ## Lógica de Conciliación (DEC-013)

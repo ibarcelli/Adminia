@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 4 — Portal Condómino COMPLETADA
 - **Última actualización:** 2026-03-26
-- **Historia actual:** Reporte de periodo publicado + reabrir periodo
+- **Historia actual:** STORY-009b — cuota fija + déficit/superávit
 
 ## Resumen
 - Ejecución: EN PROGRESO — Fases 1-4 completadas
@@ -65,6 +65,15 @@
   - Botón "Reabrir periodo" con confirmación → vuelve a draft
   - reopenPeriod() en usePeriod hook
   - BuildingView: "Ver reporte — Mes Año" para periodos publicados
+
+- **STORY-009b:** Cuota fija + déficit/superávit — COMPLETADO
+  - Migration 007: default_fixed_fee en buildings, fixed_fee en periods
+  - Paso 3 wizard: input cuota fija pre-llenada (mes anterior o sugerencia)
+  - Referencia colapsable: prorrateo por m² informativo
+  - Alerta déficit/superávit en tiempo real
+  - Statements usan cuota fija (igual para todos) + agua prorrateada
+  - PeriodReport muestra cuota fija y balance déficit/superávit
+  - DEC-014 documentada
 
 ## Próxima Acción
 - Fase 5: Polish & Launch

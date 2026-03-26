@@ -146,6 +146,12 @@ export function PeriodReport({ period, building, onReopen }: PeriodReportProps) 
             <p className="text-slate-500">Total gastos</p>
             <p className="font-semibold text-slate-800 tabular-nums">{formatMoney(totalExpenses)}</p>
           </div>
+          {period.fixed_fee > 0 && (
+            <div>
+              <p className="text-slate-500">Cuota fija</p>
+              <p className="font-semibold text-slate-800 tabular-nums">{formatMoney(period.fixed_fee)}</p>
+            </div>
+          )}
           <div>
             <p className="text-slate-500">Total facturado</p>
             <p className="font-semibold text-slate-800 tabular-nums">{formatMoney(totalBilled)}</p>
@@ -196,7 +202,20 @@ export function PeriodReport({ period, building, onReopen }: PeriodReportProps) 
         </div>
       </div>
 
-      {/* Balance */}
+      {/* Balance + Fixed fee info */}
+      {period.fixed_fee > 0 && (() => {
+        const feeTotal = period.fixed_fee * statements.length
+        const feeDiff = feeTotal - totalExpenses
+        return (
+          <div className={`rounded-lg p-4 mb-3 text-sm ${feeDiff >= 0 ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
+            Cuota fija {formatMoney(period.fixed_fee)} × {statements.length} deptos = {formatMoney(feeTotal)} vs gastos {formatMoney(totalExpenses)}
+            {' — '}
+            <span className="font-medium">
+              {feeDiff >= 0 ? `Superávit ${formatMoney(feeDiff)}` : `Déficit ${formatMoney(Math.abs(feeDiff))}`}
+            </span>
+          </div>
+        )
+      })()}
       <div className={`rounded-lg p-4 mb-6 ${balance >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
         <div className="flex justify-between items-center">
           <span className="font-semibold text-sm">Balance (cobrado - gastos)</span>

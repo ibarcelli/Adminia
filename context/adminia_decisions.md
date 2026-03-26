@@ -61,3 +61,7 @@ Decisiones canónicas del proyecto. No se reabren sin aprobación del Human Lead
   4. Monto ambiguo (múltiples deptos) → sin match
   5. Sin datos → sin match
 - **Egresos** se marcan automáticamente como confirmados (son informativos, no pagos de condóminos).
+
+## DEC-014: Cuota fija mensual como modelo principal
+- **Decisión:** Los departamentos pagan una cuota fija mensual (igual para todos) + agua prorrateada (variable por depto). El prorrateo de gastos por m² se muestra como referencia informativa para que la admin calibre la cuota, pero NO es lo que se cobra.
+- **Razón:** La realidad operativa de Adminia es que los edificios cobran una cuota fija mensual, no un prorrateo variable. La cuota fija simplifica la comunicación con los condóminos y la conciliación bancaria. El sistema informa si la cuota cubre los gastos (superávit/déficit) para que la admin decida si ajustarla.

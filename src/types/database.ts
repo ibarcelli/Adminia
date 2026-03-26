@@ -36,6 +36,7 @@ export interface Building {
   bank_account_name: string
   payment_deadline_day: number
   water_metering_type: WaterMeteringType
+  default_fixed_fee: number
   created_at: string
 }
 
@@ -68,6 +69,7 @@ export interface Period {
   water_reading_previous: number
   water_reading_current: number
   water_total_cost: number
+  fixed_fee: number
   status: PeriodStatus
   published_at: string | null
   created_at: string

@@ -48,24 +48,20 @@ export function useStatements(periodId: string | undefined) {
     setLoading(false)
   }, [periodId])
 
-  async function generateStatements(buildingId: string) {
+  async function generateStatements(buildingId: string, fixedFee: number) {
     if (!periodId) return
 
     setLoading(true)
     setError(null)
 
-    // 1. Get building for water_metering_type
+    // 1. Get building
     const { data: building } = await supabase
       .from('buildings')
       .select('water_metering_type')
       .eq('id', buildingId)
       .single()
 
-    if (!building) {
-      setError('Edificio no encontrado')
-      setLoading(false)
-      return
-    }
+    if (!building) { setError('Edificio no encontrado'); setLoading(false); return }
 
     // 2. Get active units
     const { data: units } = await supabase
@@ -74,40 +70,17 @@ export function useStatements(periodId: string | undefined) {
       .eq('building_id', buildingId)
       .eq('is_active', true)
 
-    if (!units || units.length === 0) {
-      setError('No hay departamentos activos')
-      setLoading(false)
-      return
-    }
+    if (!units || units.length === 0) { setError('No hay departamentos activos'); setLoading(false); return }
 
     const totalSqm = units.reduce((s: number, u: { area_sqm: number }) => s + u.area_sqm, 0)
 
     // 3. Get period data
-    const { data: period } = await supabase
-      .from('periods')
-      .select('*')
-      .eq('id', periodId)
-      .single()
-
-    if (!period) {
-      setError('Periodo no encontrado')
-      setLoading(false)
-      return
-    }
+    const { data: period } = await supabase.from('periods').select('*').eq('id', periodId).single()
+    if (!period) { setError('Periodo no encontrado'); setLoading(false); return }
 
     const waterTotalCost = period.water_total_cost
 
-    // 4. Get expenses total (excluding water category — water is handled separately)
-    const { data: expenses } = await supabase
-      .from('expenses')
-      .select('amount, category')
-      .eq('period_id', periodId)
-
-    const totalExpensesNonWater = (expenses ?? [])
-      .filter((e: { category: string }) => e.category !== 'water')
-      .reduce((s: number, e: { amount: number }) => s + e.amount, 0)
-
-    // 5. Individual water readings (if applicable)
+    // 4. Individual water readings (if applicable)
     let unitConsumptionMap = new Map<string, number>()
     let totalConsumption = 0
 
@@ -123,7 +96,7 @@ export function useStatements(periodId: string | undefined) {
       }
     }
 
-    // 6. Get previous period to find pending balances
+    // 5. Previous period pending balances
     const prevMonth = period.month === 1 ? 12 : period.month - 1
     const prevYear = period.month === 1 ? period.year - 1 : period.year
 
@@ -149,7 +122,7 @@ export function useStatements(periodId: string | undefined) {
       }
     }
 
-    // 7. Calculate and upsert statements
+    // 6. Calculate statements with fixed fee
     const statementsToUpsert = units.map((unit: { id: string; area_sqm: number }) => {
       let waterCharge: number
       if (building.water_metering_type === 'individual' && totalConsumption > 0) {
@@ -159,15 +132,14 @@ export function useStatements(periodId: string | undefined) {
         waterCharge = totalSqm > 0 ? waterTotalCost * (unit.area_sqm / totalSqm) : 0
       }
 
-      const expensesCharge = totalSqm > 0 ? totalExpensesNonWater * (unit.area_sqm / totalSqm) : 0
       const previousBalance = prevBalanceMap.get(unit.id) ?? 0
-      const totalDue = waterCharge + expensesCharge + previousBalance
+      const totalDue = waterCharge + fixedFee + previousBalance
 
       return {
         period_id: periodId,
         unit_id: unit.id,
         water_charge: Math.round(waterCharge * 100) / 100,
-        expenses_charge: Math.round(expensesCharge * 100) / 100,
+        expenses_charge: Math.round(fixedFee * 100) / 100,
         previous_balance: Math.round(previousBalance * 100) / 100,
         total_due: Math.round(totalDue * 100) / 100,
         status: 'pending' as const,
@@ -178,11 +150,11 @@ export function useStatements(periodId: string | undefined) {
       .from('statements')
       .upsert(statementsToUpsert, { onConflict: 'period_id,unit_id' })
 
-    if (upsertError) {
-      setError(upsertError.message)
-      setLoading(false)
-      return
-    }
+    if (upsertError) { setError(upsertError.message); setLoading(false); return }
+
+    // Save fixed_fee to period and building default
+    await supabase.from('periods').update({ fixed_fee: fixedFee }).eq('id', periodId)
+    await supabase.from('buildings').update({ default_fixed_fee: fixedFee }).eq('id', buildingId)
 
     await fetchStatements()
   }

@@ -65,12 +65,14 @@ export function PeriodWizard() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [published, setPublished] = useState(false)
 
-  // Step 3: Statements
+  // Step 3: Statements + fixed fee
   const {
     statements, totals: statementTotals,
     loading: statementsLoading, error: statementsError,
     generateStatements, fetchStatements,
   } = useStatements(period?.id)
+  const [fixedFee, setFixedFee] = useState('')
+  const [showReference, setShowReference] = useState(false)
 
   useEffect(() => {
     async function fetchBuilding() {
@@ -131,10 +133,21 @@ export function PeriodWizard() {
     }
   }, [statements.length, completedSteps])
 
-  // Load statements when entering step 3
+  // Load statements and pre-fill fixed fee when entering step 3
   useEffect(() => {
     if (step === 3 && period) {
       fetchStatements()
+      // Pre-fill fixed fee
+      if (!fixedFee) {
+        if (period.fixed_fee > 0) {
+          setFixedFee(String(period.fixed_fee))
+        } else if (building?.default_fixed_fee && building.default_fixed_fee > 0) {
+          setFixedFee(String(building.default_fixed_fee))
+        } else if (building?.total_units && building.total_units > 0 && totalExpenses > 0) {
+          // Suggest: total expenses / active units
+          setFixedFee(String(Math.round(totalExpenses / building.total_units * 100) / 100))
+        }
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, period?.id])
@@ -295,14 +308,23 @@ export function PeriodWizard() {
   }
 
   // Step 3 handlers
+  const parsedFixedFee = parseFloat(fixedFee) || 0
+  const activeUnits = building ? building.total_units : 0
+  const fixedFeeTotal = parsedFixedFee * activeUnits
+  const deficit = fixedFeeTotal - totalExpenses
+
   async function handleGenerateStatements() {
     if (!id) return
-    await generateStatements(id)
+    setFormError('')
+    if (parsedFixedFee <= 0) { setFormError('La cuota fija debe ser mayor a 0.'); return }
+    await generateStatements(id, parsedFixedFee)
   }
 
   async function handleRecalculate() {
     if (!id) return
-    await generateStatements(id)
+    setFormError('')
+    if (parsedFixedFee <= 0) { setFormError('La cuota fija debe ser mayor a 0.'); return }
+    await generateStatements(id, parsedFixedFee)
   }
 
   return (
@@ -657,24 +679,73 @@ export function PeriodWizard() {
         </div>
       )}
 
-      {/* Step 3: Prorrateo */}
+      {/* Step 3: Cuota fija + Estados de cuenta */}
       {step === 3 && (
         <div>
           <div className="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-slate-800">Revisión de prorrateo</h2>
+            <h2 className="text-lg font-semibold text-slate-800">Cuota y estados de cuenta</h2>
 
             {statementsError && <p className="text-sm text-red-600">{statementsError}</p>}
 
+            {/* Reference: prorrateo by m² (collapsible) */}
+            <div>
+              <button
+                onClick={() => setShowReference(!showReference)}
+                className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+              >
+                <svg className={`w-3 h-3 transition-transform ${showReference ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                Referencia: prorrateo por m²
+              </button>
+              {showReference && activeUnits > 0 && (
+                <div className="mt-2 p-3 bg-slate-50 rounded-md text-sm text-slate-600">
+                  <p>Total gastos: {formatMoney(totalExpenses)} / {activeUnits} deptos = <span className="font-medium">{formatMoney(totalExpenses / activeUnits)}</span> por depto (por m²)</p>
+                </div>
+              )}
+            </div>
+
+            {/* Fixed fee input */}
+            <div className="max-w-xs">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Cuota fija mensual por departamento (S/)</label>
+              <input
+                type="number" value={fixedFee} onChange={(e) => setFixedFee(e.target.value)}
+                step="0.01" placeholder="0.00"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Deficit/surplus alert */}
+            {parsedFixedFee > 0 && activeUnits > 0 && (
+              <div className={`rounded-md p-3 text-sm ${
+                deficit > 0.01 ? 'bg-green-50 border border-green-200 text-green-800' :
+                deficit < -0.01 ? 'bg-amber-50 border border-amber-200 text-amber-800' :
+                'bg-green-50 border border-green-200 text-green-800'
+              }`}>
+                <p>
+                  Cuota {formatMoney(parsedFixedFee)} × {activeUnits} deptos = {formatMoney(fixedFeeTotal)}
+                  {' vs '}gastos reales {formatMoney(totalExpenses)}
+                </p>
+                <p className="font-medium mt-1">
+                  {deficit > 0.01 ? `Superávit de ${formatMoney(deficit)} este mes` :
+                   deficit < -0.01 ? `Déficit de ${formatMoney(Math.abs(deficit))} este mes — la cuota no cubre los gastos` :
+                   'La cuota cubre los gastos exactamente'}
+                </p>
+              </div>
+            )}
+
+            {/* Generate / results */}
             {statementsLoading ? (
               <p className="text-slate-500">Calculando...</p>
             ) : statements.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-slate-600 mb-4">Los estados de cuenta no han sido generados aún.</p>
+              <div className="pt-2">
+                {formError && <p className="text-sm text-red-600 mb-2">{formError}</p>}
                 <button
                   onClick={handleGenerateStatements}
-                  className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700"
+                  disabled={parsedFixedFee <= 0}
+                  className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  Calcular prorrateo
+                  Calcular estados de cuenta
                 </button>
               </div>
             ) : (
@@ -686,17 +757,14 @@ export function PeriodWizard() {
                         <th className="text-left py-2 px-2 font-medium text-slate-600">Depto</th>
                         <th className="text-right py-2 px-2 font-medium text-slate-600">m²</th>
                         <th className="text-right py-2 px-2 font-medium text-slate-600">Agua</th>
-                        <th className="text-right py-2 px-2 font-medium text-slate-600">Gastos</th>
+                        <th className="text-right py-2 px-2 font-medium text-slate-600">Cuota fija</th>
                         <th className="text-right py-2 px-2 font-medium text-slate-600">Saldo ant.</th>
                         <th className="text-right py-2 px-2 font-medium text-slate-600">Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {statements.map((st) => (
-                        <tr
-                          key={st.id}
-                          className={`border-b border-slate-100 ${st.previous_balance > 0 ? 'bg-amber-50' : ''}`}
-                        >
+                        <tr key={st.id} className={`border-b border-slate-100 ${st.previous_balance > 0 ? 'bg-amber-50' : ''}`}>
                           <td className="py-1.5 px-2 font-medium text-slate-800">{st.unit_number}</td>
                           <td className="py-1.5 px-2 text-right text-slate-600 tabular-nums">{st.area_sqm}</td>
                           <td className="py-1.5 px-2 text-right tabular-nums">{formatMoney(st.water_charge)}</td>
@@ -723,23 +791,14 @@ export function PeriodWizard() {
                 </div>
 
                 {/* Validation */}
-                <ValidationCheck
-                  label="Agua"
-                  calculated={statementTotals.water}
-                  expected={period?.water_total_cost ?? 0}
-                />
-                <ValidationCheck
-                  label="Gastos"
-                  calculated={statementTotals.expenses}
-                  expected={totalExpenses}
-                />
+                <ValidationCheck label="Agua" calculated={statementTotals.water} expected={period?.water_total_cost ?? 0} />
+
+                {formError && <p className="text-sm text-red-600">{formError}</p>}
 
                 <div className="flex flex-wrap gap-2 pt-2">
-                  <button
-                    onClick={handleRecalculate}
-                    className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50"
-                  >
-                    Recalcular
+                  <button onClick={handleRecalculate}
+                    className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50">
+                    Recalcular con nueva cuota
                   </button>
                 </div>
               </>
