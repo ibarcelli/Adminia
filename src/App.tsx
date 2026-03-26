@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './components/AuthProvider'
+import { AuthProvider, useAuthContext } from './components/AuthProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminLayout } from './components/layout/AdminLayout'
 import { PortalLayout } from './components/layout/PortalLayout'
@@ -14,13 +14,30 @@ import { PortalStatement } from './pages/portal/PortalStatement'
 import { PortalHistory } from './pages/portal/PortalHistory'
 import { PortalBuilding } from './pages/portal/PortalBuilding'
 
+function RootRedirect() {
+  const { user, profile, loading } = useAuthContext()
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-slate-500">Cargando...</p>
+      </div>
+    )
+  }
+
+  if (!user || !profile) return <Navigate to="/login" replace />
+  if (profile.role === 'admin') return <Navigate to="/admin" replace />
+  if (profile.role === 'condo') return <Navigate to="/portal" replace />
+  return <Navigate to="/login" replace />
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Redirect root to login */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Smart root redirect */}
+          <Route path="/" element={<RootRedirect />} />
 
           {/* Auth */}
           <Route path="/login" element={<LoginPage />} />

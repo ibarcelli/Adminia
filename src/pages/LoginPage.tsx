@@ -38,7 +38,9 @@ export function LoginPage() {
 
     try {
       await signIn(email, password)
-      navigate('/admin', { replace: true })
+      // Redirect will happen via auto-redirect when profile loads (onAuthStateChange)
+      // But navigate to / as fallback which will smart-redirect based on role
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
     } finally {

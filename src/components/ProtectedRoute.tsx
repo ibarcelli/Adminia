@@ -6,6 +6,10 @@ interface ProtectedRouteProps {
   allowedRoles: UserRole[]
 }
 
+function getHomeForRole(role: UserRole): string {
+  return role === 'admin' ? '/admin' : '/portal'
+}
+
 export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuthContext()
 
@@ -17,8 +21,14 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     )
   }
 
-  if (!user || !profile || !allowedRoles.includes(profile.role)) {
+  // Not logged in → login page
+  if (!user || !profile) {
     return <Navigate to="/login" replace />
+  }
+
+  // Logged in but wrong role → redirect to their correct home
+  if (!allowedRoles.includes(profile.role)) {
+    return <Navigate to={getHomeForRole(profile.role)} replace />
   }
 
   return <Outlet />
