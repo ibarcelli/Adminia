@@ -19,7 +19,7 @@ const monthNames = [
 ]
 
 export function PeriodWizard() {
-  const { id } = useParams<{ id: string }>()
+  const { id, periodId } = useParams<{ id: string; periodId: string }>()
   const navigate = useNavigate()
   const {
     period, previousReading, unitReadings, setUnitReadings,
@@ -28,7 +28,7 @@ export function PeriodWizard() {
     createPeriod, updateWaterReading,
     fetchUnitReadings, autoFillPreviousReadings, saveUnitReadings,
     reopenPeriod, publishPeriod,
-  } = usePeriod(id)
+  } = usePeriod(id, periodId)
 
   const [building, setBuilding] = useState<Building | null>(null)
   const [step, setStep] = useState(1)

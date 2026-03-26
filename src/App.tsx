@@ -49,6 +49,7 @@ export default function App() {
               <Route path="/admin/buildings/new/settings" element={<BuildingSettings />} />
               <Route path="/admin/buildings/:id" element={<BuildingView />} />
               <Route path="/admin/buildings/:id/period" element={<PeriodWizard />} />
+              <Route path="/admin/buildings/:id/period/:periodId" element={<PeriodWizard />} />
               <Route path="/admin/buildings/:id/reconcile" element={<ReconcilePage />} />
               <Route path="/admin/buildings/:id/arrears" element={<ArrearsPage />} />
               <Route path="/admin/buildings/:id/settings" element={<BuildingSettings />} />

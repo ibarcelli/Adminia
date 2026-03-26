@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 4 — Portal Condómino COMPLETADA
 - **Última actualización:** 2026-03-26
-- **Historia actual:** STORY-024b — gestión usuarios condóminos
+- **Historia actual:** STORY-007c — gestión de múltiples periodos
 
 ## Resumen
 - Ejecución: EN PROGRESO — Fases 1-4 completadas
@@ -82,6 +82,15 @@
   - Modal pide contraseña admin para re-autenticar después de signUp
   - Contraseña visible en texto plano para la admin
   - DEC-015 documentada
+
+- **STORY-007c:** Gestión de múltiples periodos — COMPLETADO
+  - BuildingView: lista de periodos con status y acciones (Continuar/Ver reporte)
+  - Botón "+ Nuevo periodo" con selector mes/año (pre-selecciona siguiente mes)
+  - Validación de duplicados (no se puede crear periodo para mismo mes/año)
+  - usePeriod acepta periodId opcional para cargar periodo específico
+  - fetchAllPeriods para listar todos los periodos del edificio
+  - Ruta /admin/buildings/:id/period/:periodId para acceder a periodo específico
+  - Ruta legacy /admin/buildings/:id/period sigue funcionando (busca draft más reciente)
 
 ## Próxima Acción
 - Fase 5: Polish & Launch

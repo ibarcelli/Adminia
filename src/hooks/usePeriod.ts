@@ -10,8 +10,9 @@ export interface UnitReadingRow {
   consumption: number
 }
 
-export function usePeriod(buildingId: string | undefined) {
+export function usePeriod(buildingId: string | undefined, periodId?: string) {
   const [period, setPeriod] = useState<Period | null>(null)
+  const [allPeriods, setAllPeriods] = useState<Period[]>([])
   const [previousReading, setPreviousReading] = useState<number>(0)
   const [unitReadings, setUnitReadings] = useState<UnitReadingRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,7 +31,23 @@ export function usePeriod(buildingId: string | undefined) {
     setLoading(true)
     setError(null)
 
-    // Look for draft period for this building (most recent draft)
+    // If specific periodId provided, load that one
+    if (periodId) {
+      const { data: specificPeriod, error: spError } = await supabase
+        .from('periods')
+        .select('*')
+        .eq('id', periodId)
+        .single()
+
+      if (spError) { setError(spError.message); setLoading(false); return }
+
+      setPeriod(specificPeriod as Period)
+      await fetchPreviousReading(buildingId, (specificPeriod as Period).year, (specificPeriod as Period).month)
+      setLoading(false)
+      return
+    }
+
+    // Otherwise, find the most recent draft
     const { data: draftPeriod, error: draftError } = await supabase
       .from('periods')
       .select('*')
@@ -41,11 +58,7 @@ export function usePeriod(buildingId: string | undefined) {
       .limit(1)
       .maybeSingle()
 
-    if (draftError) {
-      setError(draftError.message)
-      setLoading(false)
-      return
-    }
+    if (draftError) { setError(draftError.message); setLoading(false); return }
 
     if (draftPeriod) {
       setPeriod(draftPeriod as Period)
@@ -56,7 +69,20 @@ export function usePeriod(buildingId: string | undefined) {
     }
 
     setLoading(false)
-  }, [buildingId, currentYear, currentMonth])
+  }, [buildingId, periodId, currentYear, currentMonth])
+
+  const fetchAllPeriods = useCallback(async () => {
+    if (!buildingId) return
+
+    const { data } = await supabase
+      .from('periods')
+      .select('*')
+      .eq('building_id', buildingId)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+
+    setAllPeriods((data ?? []) as Period[])
+  }, [buildingId])
 
   async function fetchPreviousReading(bId: string, year: number, month: number) {
     const prevMonth = month === 1 ? 12 : month - 1
@@ -75,7 +101,8 @@ export function usePeriod(buildingId: string | undefined) {
 
   useEffect(() => {
     fetchPeriod()
-  }, [fetchPeriod])
+    fetchAllPeriods()
+  }, [fetchPeriod, fetchAllPeriods])
 
   async function createPeriod(year: number, month: number) {
     if (!buildingId) return
@@ -285,6 +312,7 @@ export function usePeriod(buildingId: string | undefined) {
 
   return {
     period,
+    allPeriods,
     previousReading,
     unitReadings,
     setUnitReadings,
@@ -299,6 +327,7 @@ export function usePeriod(buildingId: string | undefined) {
     saveUnitReadings,
     reopenPeriod,
     publishPeriod,
+    fetchAllPeriods,
     refetch: fetchPeriod,
   }
 }
