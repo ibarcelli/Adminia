@@ -46,3 +46,7 @@ Decisiones canónicas del proyecto. No se reabren sin aprobación del Human Lead
 ## DEC-011: Tabla profiles en vez de users
 - **Decisión:** La tabla de usuarios del app se llama `profiles` (no `users`) y su PK referencia `auth.users(id)` de Supabase.
 - **Razón:** Supabase Auth ya tiene una tabla `auth.users` que maneja la autenticación. Crear otra tabla `users` en el schema público genera conflictos de nombre. `profiles` extiende los datos de auth sin colisión.
+
+## DEC-012: Dos modalidades de prorrateo de agua
+- **Decisión:** Cada edificio tiene un campo `water_metering_type` que puede ser `'individual'` (sub-medidores por departamento) o `'general'` (medidor único del edificio). El wizard paso 1 se adapta según la modalidad.
+- **Razón:** La realidad operativa de Adminia es mixta — algunos edificios tienen medidores individuales por departamento (la factura sigue siendo una sola), otros solo tienen medidor general. La modalidad individual prorratea por consumo real; la general prorratea por m².

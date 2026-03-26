@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 2 — Core Admin
 - **Última actualización:** 2026-03-25
-- **Historia actual:** STORY-007 completada
+- **Historia actual:** STORY-007b completada
 
 ## Resumen
 - Reason: COMPLETADO
@@ -18,15 +18,17 @@
 - **STORY-004:** Seed data de prueba — COMPLETADO
 - **STORY-005:** Dashboard admin — lista de edificios — COMPLETADO
 - **STORY-007:** Wizard mensual — Paso 1: Lectura de agua — COMPLETADO
-  - WizardStepper: 4 pasos con estado visual (activo, completado, futuro)
-  - usePeriod hook: busca/crea periodo draft, auto-fill lectura anterior
-  - PeriodWizard: formulario agua con validaciones y cálculo en tiempo real
-  - BuildingView: vista del edificio con botones de navegación a subpáginas
-  - Pasos 2-4 como placeholders para STORY-008, 009, 010
+- **STORY-007b:** Refactor wizard agua — dos modalidades — COMPLETADO
+  - Migration 003: enum water_metering_type, tabla unit_water_readings
+  - Modalidad general: lectura general + costo → prorrateo por m² (sin cambios)
+  - Modalidad individual: tabla con lecturas por depto, consumo en tiempo real, costo por m³
+  - Auto-fill de lecturas anteriores del periodo previo
+  - DEC-012 documentada, features.md y database.ts actualizados
+  - Torre Miraflores marcada como 'individual' en seed
 
 ## Próxima Acción
+- Ives ejecuta 003_water_metering.sql en Supabase SQL Editor
 - STORY-008: Wizard mensual — Paso 2: Registro de gastos
-- STORY-009: Wizard mensual — Paso 3: Prorrateo automático
 
 ## Blockers
-- Pendiente: Ives ejecuta migrations y seeds en Supabase para testing real
+- Pendiente: Ives ejecuta migrations en Supabase para testing real

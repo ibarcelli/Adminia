@@ -20,6 +20,7 @@
 | bank_account_type | enum | 'own' o 'adminia' |
 | bank_account_name | text | Nombre del banco/cuenta |
 | payment_deadline_day | int | Día límite de pago (1-28) |
+| water_metering_type | enum | 'individual' o 'general' (DEC-012) |
 | created_at | timestamp | |
 
 ### units (departamentos)
@@ -123,6 +124,18 @@
 | receipt_number | text | Correlativo: "ADM-2026-001" |
 | generated_at | timestamp | |
 
+### unit_water_readings (lecturas individuales de agua por depto)
+| Campo | Tipo | Nota |
+|-------|------|------|
+| id | uuid | PK |
+| period_id | uuid | FK → periods |
+| unit_id | uuid | FK → units |
+| reading_previous | decimal | Lectura anterior del sub-medidor |
+| reading_current | decimal | Lectura actual |
+| consumption | decimal | Calculado: current - previous |
+| created_at | timestamp | |
+| | | UNIQUE (period_id, unit_id) |
+
 ## Features por Pantalla
 
 ### 1. Login
@@ -166,11 +179,23 @@
 - Sin datos personales de otros condóminos — solo totales
 
 ## Lógica de Prorrateo
+
+### Prorrateo de agua — Modalidad General (DEC-012)
 ```
 consumo_total = lectura_actual - lectura_anterior
 costo_agua_por_m2 = costo_total_agua / sum(m2_todos_deptos)
 agua_depto = costo_agua_por_m2 * m2_depto
+```
 
+### Prorrateo de agua — Modalidad Individual (DEC-012)
+```
+consumo_depto = lectura_actual_depto - lectura_anterior_depto
+consumo_total = sum(consumo_todos_deptos)
+agua_depto = costo_total_agua * (consumo_depto / consumo_total)
+```
+
+### Prorrateo de gastos (igual en ambas modalidades)
+```
 gastos_por_m2 = sum(gastos_mes) / sum(m2_todos_deptos)
 gastos_depto = gastos_por_m2 * m2_depto
 

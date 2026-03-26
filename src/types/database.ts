@@ -12,6 +12,8 @@ export type MatchStatus = 'unmatched' | 'suggested' | 'confirmed' | 'rejected'
 
 export type UserRole = 'admin' | 'condo'
 
+export type WaterMeteringType = 'individual' | 'general'
+
 // Tables
 
 export interface Organization {
@@ -29,6 +31,7 @@ export interface Building {
   bank_account_type: BankAccountType
   bank_account_name: string
   payment_deadline_day: number
+  water_metering_type: WaterMeteringType
   created_at: string
 }
 
@@ -122,4 +125,14 @@ export interface Receipt {
   payment_id: string
   receipt_number: string
   generated_at: string
+}
+
+export interface UnitWaterReading {
+  id: string
+  period_id: string
+  unit_id: string
+  reading_previous: number
+  reading_current: number
+  consumption: number
+  created_at: string
 }
