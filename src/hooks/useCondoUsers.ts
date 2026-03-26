@@ -30,78 +30,103 @@ export function useCondoUsers() {
         .maybeSingle()
 
       if (existingProfile) {
-        // User exists — just update password in units table
-        // (We can't update Supabase Auth password without service_role key)
-        await supabase
+        // User exists — update password in units and unit_id in profile
+        const { error: unitErr } = await supabase
           .from('units')
           .update({ portal_password: password })
           .eq('id', unitId)
 
-        // Update profile's unit_id in case it changed
-        await supabase
+        if (unitErr) throw new Error(`Error guardando contraseña: ${unitErr.message}`)
+
+        const { error: profErr } = await supabase
           .from('profiles')
           .update({ unit_id: unitId })
           .eq('id', existingProfile.id)
+
+        if (profErr) throw new Error(`Error actualizando profile: ${profErr.message}`)
 
         setLoading(false)
         return true
       }
 
-      // New user — create via signUp (this will change the current session)
+      // Step 1: Create user via signUp
+      // This may change/invalidate the current admin session
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
+        options: {
+          // Store unit_id in user metadata as backup
+          data: { unit_id: unitId, role: 'condo' },
+        },
       })
 
       if (signUpError) {
-        // Handle "User already registered" — means they exist in auth but not in profiles as condo
-        if (signUpError.message.includes('already registered') || signUpError.message.includes('already been registered')) {
-          setError('Este email ya está registrado. Usa una contraseña diferente o contacta soporte.')
-          setLoading(false)
-          return false
+        if (signUpError.message.includes('already') || signUpError.message.includes('already')) {
+          throw new Error('Este email ya está registrado en el sistema de autenticación.')
         }
         throw signUpError
       }
 
-      const newUserId = signUpData.user?.id
-
-      if (newUserId) {
-        // Create condo profile
-        await supabase
-          .from('profiles')
-          .upsert({
-            id: newUserId,
-            email: email.trim(),
-            role: 'condo',
-            unit_id: unitId,
-          }, { onConflict: 'id' })
+      // signUp may return user=null if "fake" signup (email exists but Supabase hides it)
+      // Or user with identities=[] which means the email is taken
+      const newUser = signUpData.user
+      if (!newUser || (newUser.identities && newUser.identities.length === 0)) {
+        throw new Error('Este email ya está registrado. Contacta soporte para resetear el acceso.')
       }
 
-      // Save password to unit
-      await supabase
-        .from('units')
-        .update({ portal_password: password })
-        .eq('id', unitId)
+      const newUserId = newUser.id
 
-      // Re-authenticate admin (signUp changed the session)
-      await supabase.auth.signInWithPassword({
+      // Step 2: IMMEDIATELY re-authenticate as admin
+      // This is critical: we need admin RLS permissions to create the profile
+      const { error: reAuthError } = await supabase.auth.signInWithPassword({
         email: adminEmail,
         password: adminPassword,
       })
 
+      if (reAuthError) {
+        throw new Error(`Error re-autenticando admin: ${reAuthError.message}. El usuario fue creado pero el profile no. Vuelve a loguearte como admin.`)
+      }
+
+      // Step 3: Create condo profile (now running as admin with full RLS permissions)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: newUserId,
+          email: email.trim(),
+          role: 'condo',
+          unit_id: unitId,
+        }, { onConflict: 'id' })
+
+      if (profileError) {
+        throw new Error(`Error creando profile: ${profileError.message}`)
+      }
+
+      // Step 4: Save password to unit
+      const { error: pwError } = await supabase
+        .from('units')
+        .update({ portal_password: password })
+        .eq('id', unitId)
+
+      if (pwError) {
+        throw new Error(`Error guardando contraseña: ${pwError.message}`)
+      }
+
       setLoading(false)
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear acceso')
-      // Try to re-authenticate admin in case session was lost
+      const message = err instanceof Error ? err.message : 'Error al crear acceso'
+      setError(message)
+
+      // Ensure admin is re-authenticated even on error
       try {
         await supabase.auth.signInWithPassword({
           email: adminEmail,
           password: adminPassword,
         })
       } catch {
-        // If re-auth fails, user will need to login again
+        setError(message + ' — Además, no se pudo re-autenticar. Vuelve a loguearte.')
       }
+
       setLoading(false)
       return false
     }
