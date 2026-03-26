@@ -65,3 +65,7 @@ Decisiones canónicas del proyecto. No se reabren sin aprobación del Human Lead
 ## DEC-014: Cuota fija mensual como modelo principal
 - **Decisión:** Los departamentos pagan una cuota fija mensual (igual para todos) + agua prorrateada (variable por depto). El prorrateo de gastos por m² se muestra como referencia informativa para que la admin calibre la cuota, pero NO es lo que se cobra.
 - **Razón:** La realidad operativa de Adminia es que los edificios cobran una cuota fija mensual, no un prorrateo variable. La cuota fija simplifica la comunicación con los condóminos y la conciliación bancaria. El sistema informa si la cuota cubre los gastos (superávit/déficit) para que la admin decida si ajustarla.
+
+## DEC-015: Contraseñas de condóminos en texto plano
+- **Decisión:** Las contraseñas de acceso al portal de condóminos se guardan en texto plano en `units.portal_password` para referencia de la administradora. La admin crea accesos desde la configuración del edificio y puede ver/compartir la contraseña con el condómino.
+- **Razón:** La admin necesita poder comunicar la contraseña al condómino (por WhatsApp, en persona, etc.). Son contraseñas simples de acceso a un portal de consulta, no credenciales financieras. En producción se migrará a magic link (DEC-004) cuando el envío de emails esté configurado.

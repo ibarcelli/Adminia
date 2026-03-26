@@ -4,6 +4,7 @@ import { useAuthContext } from '../../components/AuthProvider'
 import { useBuilding } from '../../hooks/useBuilding'
 import type { BuildingFormData } from '../../hooks/useBuilding'
 import { useUnits } from '../../hooks/useUnits'
+import { useCondoUsers } from '../../hooks/useCondoUsers'
 import { Breadcrumb } from '../../components/ui/Breadcrumb'
 import type { BankAccountType, WaterMeteringType } from '../../types/database'
 
@@ -15,7 +16,7 @@ export function BuildingSettings() {
   const buildingId = isNew ? null : id
 
   const { building, loading: bLoading, error: bError, createBuilding, updateBuilding, deleteBuilding } = useBuilding(buildingId)
-  const { units, loading: uLoading, error: uError, totalUnits, totalArea, addUnit, updateUnit, toggleActive } = useUnits(buildingId)
+  const { units, loading: uLoading, error: uError, totalUnits, totalArea, addUnit, updateUnit, toggleActive, refetch: refetchUnits } = useUnits(buildingId)
 
   // Building form state
   const [name, setName] = useState('')
@@ -27,6 +28,12 @@ export function BuildingSettings() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
+
+  // Condo user management
+  const { loading: condoLoading, error: condoError, createOrUpdateCondoAccess, setError: setCondoError } = useCondoUsers()
+  const [adminPassword, setAdminPassword] = useState('')
+  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false)
+  const [pendingCondoUnit, setPendingCondoUnit] = useState<{ unitId: string; email: string; password: string } | null>(null)
 
   // Delete
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -215,13 +222,24 @@ export function BuildingSettings() {
                     <th className="text-right py-2 px-2 font-medium text-slate-600">m²</th>
                     <th className="text-left py-2 px-2 font-medium text-slate-600">Propietario</th>
                     <th className="text-left py-2 px-2 font-medium text-slate-600">Email</th>
-                    <th className="text-left py-2 px-2 font-medium text-slate-600 hidden sm:table-cell">Teléfono</th>
+                    <th className="text-left py-2 px-2 font-medium text-slate-600 hidden sm:table-cell">Contraseña</th>
+                    <th className="text-center py-2 px-2 font-medium text-slate-600">Acceso</th>
                     <th className="text-center py-2 px-2 font-medium text-slate-600">Activo</th>
                   </tr>
                 </thead>
                 <tbody>
                   {units.map((unit) => (
-                    <UnitRow key={unit.id} unit={unit} onUpdate={updateUnit} onToggle={toggleActive} />
+                    <UnitRow
+                      key={unit.id}
+                      unit={unit}
+                      onUpdate={updateUnit}
+                      onToggle={toggleActive}
+                      onCreateAccess={(unitId, email, pw) => {
+                        setPendingCondoUnit({ unitId, email, password: pw })
+                        setShowAdminPasswordModal(true)
+                      }}
+                      condoLoading={condoLoading}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -263,6 +281,62 @@ export function BuildingSettings() {
               {totalUnits} departamentos activos | Área total: {totalArea.toFixed(2)} m²
             </div>
           )}
+        </div>
+      )}
+
+      {/* Condo error */}
+      {condoError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-red-700">{condoError}</p>
+          <button onClick={() => setCondoError(null)} className="text-xs text-red-500 hover:underline mt-1">Cerrar</button>
+        </div>
+      )}
+
+      {/* Admin password modal for condo user creation */}
+      {showAdminPasswordModal && pendingCondoUnit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/40" onClick={() => { setShowAdminPasswordModal(false); setAdminPassword('') }} />
+          <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">Confirmar tu contraseña</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Para crear el acceso del condómino, necesitamos tu contraseña de admin para re-autenticarte después.
+            </p>
+            <input
+              type="password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="Tu contraseña de admin"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="flex justify-end gap-3">
+              <button onClick={() => { setShowAdminPasswordModal(false); setAdminPassword('') }}
+                className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50">
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!profile?.email || !adminPassword) return
+                  setShowAdminPasswordModal(false)
+                  const ok = await createOrUpdateCondoAccess(
+                    pendingCondoUnit.unitId,
+                    pendingCondoUnit.email,
+                    pendingCondoUnit.password,
+                    profile.email,
+                    adminPassword,
+                  )
+                  setAdminPassword('')
+                  setPendingCondoUnit(null)
+                  if (ok) {
+                    await refetchUnits()
+                  }
+                }}
+                disabled={!adminPassword || condoLoading}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {condoLoading ? 'Creando...' : 'Crear acceso'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -323,16 +397,16 @@ export function BuildingSettings() {
   )
 }
 
-// === Unit row with inline editing ===
+// === Unit row with inline editing + condo access ===
 
 function UnitRow({
-  unit,
-  onUpdate,
-  onToggle,
+  unit, onUpdate, onToggle, onCreateAccess, condoLoading,
 }: {
-  unit: { id: string; unit_number: string; area_sqm: number; owner_name: string; owner_email: string; owner_phone: string | null; is_active: boolean }
+  unit: { id: string; unit_number: string; area_sqm: number; owner_name: string; owner_email: string; owner_phone: string | null; portal_password: string; is_active: boolean }
   onUpdate: (id: string, data: { unit_number: string; area_sqm: number; owner_name: string; owner_email: string; owner_phone: string | null }) => Promise<boolean>
   onToggle: (id: string, isActive: boolean) => Promise<boolean>
+  onCreateAccess: (unitId: string, email: string, password: string) => void
+  condoLoading: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [unitNumber, setUnitNumber] = useState(unit.unit_number)
@@ -340,11 +414,13 @@ function UnitRow({
   const [ownerName, setOwnerName] = useState(unit.owner_name)
   const [ownerEmail, setOwnerEmail] = useState(unit.owner_email)
   const [ownerPhone, setOwnerPhone] = useState(unit.owner_phone ?? '')
+  const [password, setPassword] = useState(unit.portal_password || '')
+
+  const hasAccess = !!(unit.owner_email && unit.portal_password)
 
   async function handleSave() {
     const area = parseFloat(areaSqm)
     if (!unitNumber.trim() || isNaN(area) || area <= 0) return
-
     await onUpdate(unit.id, {
       unit_number: unitNumber.trim(),
       area_sqm: area,
@@ -362,7 +438,8 @@ function UnitRow({
         <td className="py-1.5 px-2"><input type="number" value={areaSqm} onChange={(e) => setAreaSqm(e.target.value)} step="0.01" className="w-16 px-2 py-1 border border-slate-300 rounded text-sm text-right" /></td>
         <td className="py-1.5 px-2"><input type="text" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className="w-full px-2 py-1 border border-slate-300 rounded text-sm" /></td>
         <td className="py-1.5 px-2"><input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} className="w-full px-2 py-1 border border-slate-300 rounded text-sm" /></td>
-        <td className="py-1.5 px-2 hidden sm:table-cell"><input type="text" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} className="w-full px-2 py-1 border border-slate-300 rounded text-sm" /></td>
+        <td className="py-1.5 px-2 hidden sm:table-cell"><input type="text" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} placeholder="Teléfono" className="w-full px-2 py-1 border border-slate-300 rounded text-sm" /></td>
+        <td className="py-1.5 px-2"></td>
         <td className="py-1.5 px-2 text-center">
           <button onClick={handleSave} className="text-xs text-blue-600 hover:underline mr-1">Guardar</button>
           <button onClick={() => setEditing(false)} className="text-xs text-slate-400 hover:underline">Cancelar</button>
@@ -372,13 +449,56 @@ function UnitRow({
   }
 
   return (
-    <tr className={`border-b border-slate-100 cursor-pointer hover:bg-slate-50 ${!unit.is_active ? 'opacity-50' : ''}`}
+    <tr className={`border-b border-slate-100 hover:bg-slate-50 ${!unit.is_active ? 'opacity-50' : ''}`}
       onDoubleClick={() => setEditing(true)}>
       <td className="py-1.5 px-2 font-medium text-slate-800">{unit.unit_number}</td>
       <td className="py-1.5 px-2 text-right tabular-nums">{unit.area_sqm}</td>
       <td className="py-1.5 px-2 text-slate-600">{unit.owner_name || '—'}</td>
-      <td className="py-1.5 px-2 text-slate-600 truncate max-w-[150px]">{unit.owner_email || '—'}</td>
-      <td className="py-1.5 px-2 text-slate-500 hidden sm:table-cell">{unit.owner_phone || '—'}</td>
+      <td className="py-1.5 px-2 text-slate-600 truncate max-w-[120px]">{unit.owner_email || '—'}</td>
+      <td className="py-1.5 px-2 hidden sm:table-cell">
+        {unit.owner_email ? (
+          <input
+            type="text"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Contraseña"
+            className="w-24 px-2 py-1 border border-slate-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        ) : (
+          <span className="text-xs text-slate-400">—</span>
+        )}
+      </td>
+      <td className="py-1.5 px-2 text-center">
+        {unit.owner_email ? (
+          hasAccess ? (
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Activo</span>
+              {password !== unit.portal_password && password.trim() && (
+                <button
+                  onClick={() => onCreateAccess(unit.id, unit.owner_email, password)}
+                  disabled={condoLoading}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Actualizar
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                if (!password.trim()) return
+                onCreateAccess(unit.id, unit.owner_email, password)
+              }}
+              disabled={condoLoading || !password.trim()}
+              className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              Crear acceso
+            </button>
+          )
+        ) : (
+          <span className="text-xs text-slate-400">Sin email</span>
+        )}
+      </td>
       <td className="py-1.5 px-2 text-center">
         <button
           onClick={(e) => { e.stopPropagation(); onToggle(unit.id, !unit.is_active) }}

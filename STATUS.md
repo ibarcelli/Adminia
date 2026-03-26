@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 4 — Portal Condómino COMPLETADA
 - **Última actualización:** 2026-03-26
-- **Historia actual:** STORY-009b — cuota fija + déficit/superávit
+- **Historia actual:** STORY-024b — gestión usuarios condóminos
 
 ## Resumen
 - Ejecución: EN PROGRESO — Fases 1-4 completadas
@@ -74,6 +74,14 @@
   - Statements usan cuota fija (igual para todos) + agua prorrateada
   - PeriodReport muestra cuota fija y balance déficit/superávit
   - DEC-014 documentada
+
+- **STORY-024b:** Gestión usuarios condóminos — COMPLETADO
+  - Migration 008: portal_password en units
+  - useCondoUsers hook: crear/actualizar acceso via signUp + re-auth admin
+  - BuildingSettings: columna contraseña + badge acceso (Activo/Sin acceso)
+  - Modal pide contraseña admin para re-autenticar después de signUp
+  - Contraseña visible en texto plano para la admin
+  - DEC-015 documentada
 
 ## Próxima Acción
 - Fase 5: Polish & Launch

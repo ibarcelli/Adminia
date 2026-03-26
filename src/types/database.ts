@@ -48,6 +48,7 @@ export interface Unit {
   owner_name: string
   owner_email: string
   owner_phone: string | null
+  portal_password: string
   is_active: boolean
   created_at: string
 }
