@@ -42,3 +42,7 @@ Decisiones canónicas del proyecto. No se reabren sin aprobación del Human Lead
 ## DEC-010: Una cuenta bancaria configurable por edificio
 - **Decisión:** Cada edificio tiene configurado si usa su propia cuenta bancaria o la cuenta de Adminia. Esto es un campo de configuración del edificio.
 - **Razón:** La realidad actual de Adminia es mixta — algunos edificios tienen cuenta propia, otros no.
+
+## DEC-011: Tabla profiles en vez de users
+- **Decisión:** La tabla de usuarios del app se llama `profiles` (no `users`) y su PK referencia `auth.users(id)` de Supabase.
+- **Razón:** Supabase Auth ya tiene una tabla `auth.users` que maneja la autenticación. Crear otra tabla `users` en el schema público genera conflictos de nombre. `profiles` extiende los datos de auth sin colisión.

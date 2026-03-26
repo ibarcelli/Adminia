@@ -44,7 +44,7 @@ export interface Unit {
   created_at: string
 }
 
-export interface User {
+export interface Profile {
   id: string
   email: string
   role: UserRole
