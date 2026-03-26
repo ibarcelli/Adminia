@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Building, PeriodStatus } from '../types/database'
 
@@ -10,6 +10,9 @@ export function useBuildings(organizationId: string | null) {
   const [buildings, setBuildings] = useState<BuildingWithPeriod[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const refetch = useCallback(() => setRefreshKey((k) => k + 1), [])
 
   useEffect(() => {
     if (!organizationId) {
@@ -42,7 +45,7 @@ export function useBuildings(organizationId: string | null) {
             .order('year', { ascending: false })
             .order('month', { ascending: false })
             .limit(1)
-            .single()
+            .maybeSingle()
 
           return {
             ...building,
@@ -56,7 +59,7 @@ export function useBuildings(organizationId: string | null) {
     }
 
     fetchBuildings()
-  }, [organizationId])
+  }, [organizationId, refreshKey])
 
-  return { buildings, loading, error }
+  return { buildings, loading, error, refetch }
 }

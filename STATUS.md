@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 4 — Portal Condómino COMPLETADA
 - **Última actualización:** 2026-03-26
-- **Historia actual:** STORY-006b + STORY-008b completadas
+- **Historia actual:** STORY-006b + STORY-008b completadas + 3 bugfixes
 
 ## Resumen
 - Ejecución: EN PROGRESO — Fases 1-4 completadas

@@ -1,14 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthContext } from '../AuthProvider'
 import { useBuildings } from '../../hooks/useBuildings'
 
 export function AdminLayout() {
   const { profile, signOut } = useAuthContext()
-  const { buildings } = useBuildings(profile?.organization_id ?? null)
+  const { buildings, refetch } = useBuildings(profile?.organization_id ?? null)
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Refetch buildings when navigating to dashboard (e.g. after delete or create)
+  useEffect(() => {
+    if (location.pathname === '/admin') refetch()
+  }, [location.pathname, refetch])
 
   async function handleSignOut() {
     await signOut()

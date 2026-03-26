@@ -45,6 +45,7 @@ export function PeriodWizard() {
     expenses, totalExpenses,
     error: expensesError,
     addExpense, updateExpense, deleteExpense,
+    refetch: refetchExpenses,
   } = useExpenses(period?.id)
 
   const [newConcept, setNewConcept] = useState('')
@@ -613,12 +614,7 @@ export function PeriodWizard() {
                       const ok = await importSelectedExpenses(period.id)
                       if (ok) {
                         setShowImportModal(false)
-                        // Refresh expenses list
-                        const { data } = await supabase.from('expenses').select('*').eq('period_id', period.id).order('created_at')
-                        if (data) {
-                          // Force re-render by navigating to same page (simple approach)
-                          window.location.reload()
-                        }
+                        await refetchExpenses()
                       }
                     }}
                     disabled={importLoading}

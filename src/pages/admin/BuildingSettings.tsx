@@ -74,13 +74,22 @@ export function BuildingSettings() {
     if (isNew) {
       if (!profile?.organization_id) { setFormError('No se encontró la organización.'); setSaving(false); return }
       const newId = await createBuilding(profile.organization_id, data)
+      setSaving(false)
       if (newId) {
-        navigate(`/admin/buildings/${newId}/settings`, { replace: true })
         setFormSuccess('Edificio creado. Ahora puedes agregar departamentos.')
+        navigate(`/admin/buildings/${newId}/settings`, { replace: true })
+      } else {
+        setFormError('Error al crear el edificio. Revisa los datos e intenta de nuevo.')
       }
-    } else if (buildingId) {
+      return
+    }
+
+    if (buildingId) {
       const ok = await updateBuilding(buildingId, data)
+      setSaving(false)
       if (ok) setFormSuccess('Cambios guardados.')
+      else setFormError('Error al guardar los cambios.')
+      return
     }
 
     setSaving(false)
