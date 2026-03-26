@@ -202,6 +202,14 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
 
   async function manualMatch(transactionId: string, unitId: string) {
     setError(null)
+
+    // Prevent reassigning confirmed transactions
+    const txn = transactions.find((t) => t.id === transactionId)
+    if (txn?.match_status === 'confirmed') {
+      setError('Esta transacción ya fue confirmada y no se puede reasignar.')
+      return
+    }
+
     const { error: err } = await supabase
       .from('bank_transactions')
       .update({ match_status: 'suggested' as MatchStatus, matched_unit_id: unitId, match_confidence: 'high' })
@@ -227,6 +235,18 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
 
     const txn = transactions.find((t) => t.id === transactionId)
     if (!txn || !txn.matched_unit_id || !periodId) return
+
+    // Check if payment already exists for this transaction
+    const { data: existingPayment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('bank_transaction_id', transactionId)
+      .maybeSingle()
+
+    if (existingPayment) {
+      setError('Esta transacción ya fue asignada a un departamento.')
+      return
+    }
 
     const { data: stmt } = await supabase
       .from('statements')
@@ -272,7 +292,16 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
   async function confirmAllSuggested(adminId: string) {
     const suggested = transactions.filter((t) => t.match_status === 'suggested' && t.transaction_type === 'income')
     for (const txn of suggested) {
-      await confirmMatch(txn.id, adminId)
+      // Skip if already confirmed (race condition protection)
+      const { data: existing } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('bank_transaction_id', txn.id)
+        .maybeSingle()
+
+      if (!existing) {
+        await confirmMatch(txn.id, adminId)
+      }
     }
   }
 
