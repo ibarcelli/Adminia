@@ -11,8 +11,8 @@ export function BuildingSettings() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { profile } = useAuthContext()
-  const isNew = id === 'new'
-  const buildingId = isNew ? null : (id ?? null)
+  const isNew = !id || id === 'new'
+  const buildingId = isNew ? null : id
 
   const { building, loading: bLoading, error: bError, createBuilding, updateBuilding, deleteBuilding } = useBuilding(buildingId)
   const { units, loading: uLoading, error: uError, totalUnits, totalArea, addUnit, updateUnit, toggleActive } = useUnits(buildingId)
