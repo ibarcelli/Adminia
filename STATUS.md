@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 4 — Portal Condómino COMPLETADA
 - **Última actualización:** 2026-03-26
-- **Historia actual:** STORY-015 a STORY-018 completadas
+- **Historia actual:** STORY-006 completada
 
 ## Resumen
 - Ejecución: EN PROGRESO — Fases 1-4 completadas
@@ -34,6 +34,17 @@
   - Selector de periodo, sección ingresos (cobrados/pendientes)
   - Sección egresos (lista de gastos), balance
   - Sin datos individuales de otros condóminos
+
+## Últimas Ejecuciones (cont.)
+- **STORY-006:** Configuración de edificio — COMPLETADO
+  - useBuilding hook: crear/editar edificio con todos los campos
+  - useUnits hook: CRUD de departamentos con toggle activo/inactivo
+  - BuildingSettings: formulario dual (datos edificio + tabla departamentos)
+  - Departamentos editables inline (doble click), toggle activo con switch
+  - total_units se actualiza automáticamente
+  - Botón "+ Nuevo edificio" en dashboard → /admin/buildings/new/settings
+  - Ruta /admin/buildings/new/settings para creación
+  - Tipo de medidor de agua configurable (general/individual)
 
 ## Próxima Acción
 - Fase 5: Polish & Launch
