@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useArrears } from '../../hooks/useArrears'
+import { Breadcrumb } from '../../components/ui/Breadcrumb'
 import { formatMoney } from '../../lib/formatters'
 import type { Building } from '../../types/database'
 
@@ -29,6 +30,7 @@ export function ArrearsPage() {
 
   return (
     <div className="p-8">
+      <Breadcrumb buildingId={id} buildingName={building?.name} currentPage="Morosidad" />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800">{building?.name} — Morosidad</h1>
       </div>

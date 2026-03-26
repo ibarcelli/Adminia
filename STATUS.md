@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 4 — Portal Condómino COMPLETADA
 - **Última actualización:** 2026-03-26
-- **Historia actual:** STORY-006 completada
+- **Historia actual:** STORY-006b + STORY-008b completadas
 
 ## Resumen
 - Ejecución: EN PROGRESO — Fases 1-4 completadas
@@ -45,6 +45,17 @@
   - Botón "+ Nuevo edificio" en dashboard → /admin/buildings/new/settings
   - Ruta /admin/buildings/new/settings para creación
   - Tipo de medidor de agua configurable (general/individual)
+
+- **STORY-006b:** Eliminar edificios + navegación — COMPLETADO
+  - Breadcrumbs en todas las páginas de edificio (BuildingView, PeriodWizard, ReconcilePage, ArrearsPage, BuildingSettings)
+  - "Adminia" en sidebar ya era clickeable (navega a /admin)
+  - Eliminar edificio con confirmación por nombre + modal
+  - deleteBuilding en useBuilding hook, ON DELETE CASCADE en DB
+- **STORY-008b:** Importar gastos desde extracto — COMPLETADO
+  - useExpenseImport hook: parsea egresos del BCP, preview con checkboxes
+  - Modal de importación en paso 2 del wizard
+  - Admin puede desmarcar, editar concepto y categoría antes de importar
+  - Gastos importados se suman a los manuales existentes
 
 ## Próxima Acción
 - Fase 5: Polish & Launch

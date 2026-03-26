@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { WizardStepper } from '../../components/ui/WizardStepper'
+import { Breadcrumb } from '../../components/ui/Breadcrumb'
+import { FileUploader } from '../../components/ui/FileUploader'
 import { usePeriod } from '../../hooks/usePeriod'
 import { useExpenses } from '../../hooks/useExpenses'
 import { useStatements } from '../../hooks/useStatements'
+import { useExpenseImport } from '../../hooks/useExpenseImport'
 import { formatMoney } from '../../lib/formatters'
 import type { UnitReadingRow } from '../../hooks/usePeriod'
 import type { Building, ExpenseCategory } from '../../types/database'
@@ -47,6 +50,14 @@ export function PeriodWizard() {
   const [newConcept, setNewConcept] = useState('')
   const [newAmount, setNewAmount] = useState('')
   const [newCategory, setNewCategory] = useState<ExpenseCategory>('fixed')
+
+  // Step 2b: Expense import
+  const {
+    parsedExpenses, loading: importLoading, error: importError,
+    parseExpensesFromFile, updateExpense: updateParsedExpense,
+    importSelectedExpenses, clearParsed,
+  } = useExpenseImport()
+  const [showImportModal, setShowImportModal] = useState(false)
 
   // Step 4: Publish
   const [showConfirm, setShowConfirm] = useState(false)
@@ -266,7 +277,7 @@ export function PeriodWizard() {
 
   return (
     <div className="p-8">
-      {/* Header */}
+      <Breadcrumb buildingId={id} buildingName={building.name} currentPage="Periodo mensual" />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800">{building.name}</h1>
         <p className="text-sm text-slate-500 mt-1">
@@ -445,7 +456,15 @@ export function PeriodWizard() {
       {step === 2 && (
         <div className="max-w-2xl">
           <div className="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-slate-800">Gastos del mes</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-800">Gastos del mes</h2>
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="px-3 py-1.5 text-sm text-blue-600 border border-blue-200 rounded-md hover:bg-blue-50"
+              >
+                Importar desde extracto
+              </button>
+            </div>
 
             {expensesError && <p className="text-sm text-red-600">{expensesError}</p>}
 
@@ -525,6 +544,90 @@ export function PeriodWizard() {
                 Siguiente
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import expenses modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/40" onClick={() => { setShowImportModal(false); clearParsed() }} />
+          <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Importar gastos desde extracto bancario</h3>
+
+            {parsedExpenses.length === 0 ? (
+              <div className="max-w-sm">
+                <FileUploader onFileSelect={(file) => parseExpensesFromFile(file)} loading={importLoading} />
+                {importError && <p className="text-sm text-red-600 mt-2">{importError}</p>}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-slate-500">{parsedExpenses.filter((e) => e.selected).length} de {parsedExpenses.length} egresos seleccionados</p>
+
+                <div className="overflow-x-auto max-h-[40vh]">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-white">
+                      <tr className="border-b border-slate-200">
+                        <th className="py-2 px-2 w-8"></th>
+                        <th className="text-right py-2 px-2 font-medium text-slate-600">Monto</th>
+                        <th className="text-left py-2 px-2 font-medium text-slate-600">Concepto</th>
+                        <th className="text-left py-2 px-2 font-medium text-slate-600">Categoría</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parsedExpenses.map((exp, i) => (
+                        <tr key={i} className={`border-b border-slate-100 ${!exp.selected ? 'opacity-40' : ''}`}>
+                          <td className="py-1.5 px-2">
+                            <input type="checkbox" checked={exp.selected}
+                              onChange={(e) => updateParsedExpense(i, { selected: e.target.checked })}
+                              className="rounded" />
+                          </td>
+                          <td className="py-1.5 px-2 text-right tabular-nums">{formatMoney(exp.amount)}</td>
+                          <td className="py-1.5 px-2">
+                            <input type="text" value={exp.concept}
+                              onChange={(e) => updateParsedExpense(i, { concept: e.target.value })}
+                              className="w-full px-2 py-1 border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <select value={exp.category}
+                              onChange={(e) => updateParsedExpense(i, { category: e.target.value as ExpenseCategory })}
+                              className="px-2 py-1 border border-slate-200 rounded text-sm">
+                              <option value="fixed">Fijo</option>
+                              <option value="variable">Variable</option>
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button onClick={() => { setShowImportModal(false); clearParsed() }}
+                    className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50">
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!period) return
+                      const ok = await importSelectedExpenses(period.id)
+                      if (ok) {
+                        setShowImportModal(false)
+                        // Refresh expenses list
+                        const { data } = await supabase.from('expenses').select('*').eq('period_id', period.id).order('created_at')
+                        if (data) {
+                          // Force re-render by navigating to same page (simple approach)
+                          window.location.reload()
+                        }
+                      }
+                    }}
+                    disabled={importLoading}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50">
+                    {importLoading ? 'Importando...' : `Importar seleccionados (${parsedExpenses.filter((e) => e.selected).length})`}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

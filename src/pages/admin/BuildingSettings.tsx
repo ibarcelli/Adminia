@@ -4,6 +4,7 @@ import { useAuthContext } from '../../components/AuthProvider'
 import { useBuilding } from '../../hooks/useBuilding'
 import type { BuildingFormData } from '../../hooks/useBuilding'
 import { useUnits } from '../../hooks/useUnits'
+import { Breadcrumb } from '../../components/ui/Breadcrumb'
 import type { BankAccountType, WaterMeteringType } from '../../types/database'
 
 export function BuildingSettings() {
@@ -13,7 +14,7 @@ export function BuildingSettings() {
   const isNew = id === 'new'
   const buildingId = isNew ? null : (id ?? null)
 
-  const { building, loading: bLoading, error: bError, createBuilding, updateBuilding } = useBuilding(buildingId)
+  const { building, loading: bLoading, error: bError, createBuilding, updateBuilding, deleteBuilding } = useBuilding(buildingId)
   const { units, loading: uLoading, error: uError, totalUnits, totalArea, addUnit, updateUnit, toggleActive } = useUnits(buildingId)
 
   // Building form state
@@ -26,6 +27,10 @@ export function BuildingSettings() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
+
+  // Delete
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmName, setDeleteConfirmName] = useState('')
 
   // Unit add form
   const [showAddUnit, setShowAddUnit] = useState(false)
@@ -111,6 +116,7 @@ export function BuildingSettings() {
 
   return (
     <div className="p-8 max-w-4xl">
+      <Breadcrumb buildingId={buildingId ?? undefined} buildingName={building?.name} currentPage="Configuración" />
       <h1 className="text-2xl font-bold text-slate-800 mb-6">
         {isNew ? 'Nuevo edificio' : `${building?.name ?? 'Edificio'} — Configuración`}
       </h1>
@@ -248,6 +254,60 @@ export function BuildingSettings() {
               {totalUnits} departamentos activos | Área total: {totalArea.toFixed(2)} m²
             </div>
           )}
+        </div>
+      )}
+
+      {/* Section 3: Delete (only for existing buildings) */}
+      {!isNew && buildingId && (
+        <div className="bg-white border border-red-200 rounded-lg p-6 mt-6">
+          <h2 className="text-lg font-semibold text-red-700 mb-2">Zona de peligro</h2>
+          <p className="text-sm text-slate-600 mb-4">
+            Eliminar el edificio borrará todos los departamentos, periodos, estados de cuenta y registros asociados. Esta acción no se puede deshacer.
+          </p>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700"
+          >
+            Eliminar edificio
+          </button>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && building && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/40" onClick={() => { setShowDeleteModal(false); setDeleteConfirmName('') }} />
+          <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">Eliminar {building.name}</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Se eliminarán todos los departamentos, periodos, estados de cuenta y registros. No se puede deshacer.
+            </p>
+            <p className="text-sm text-slate-600 mb-2">Escribe <span className="font-semibold">{building.name}</span> para confirmar:</p>
+            <input
+              type="text"
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder={building.name}
+            />
+            <div className="flex justify-end gap-3">
+              <button onClick={() => { setShowDeleteModal(false); setDeleteConfirmName('') }}
+                className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50">
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!buildingId) return
+                  const ok = await deleteBuilding(buildingId)
+                  if (ok) navigate('/admin', { replace: true })
+                }}
+                disabled={deleteConfirmName !== building.name}
+                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

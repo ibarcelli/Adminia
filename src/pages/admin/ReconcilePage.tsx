@@ -8,6 +8,7 @@ import type { TransactionRow } from '../../hooks/useReconciliation'
 import { FileUploader } from '../../components/ui/FileUploader'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { formatMoney, formatDate } from '../../lib/formatters'
+import { Breadcrumb } from '../../components/ui/Breadcrumb'
 import type { Building, Period, MatchConfidence } from '../../types/database'
 
 export function ReconcilePage() {
@@ -87,6 +88,7 @@ export function ReconcilePage() {
 
   return (
     <div className="p-8">
+      <Breadcrumb buildingId={id} buildingName={building?.name} currentPage="Conciliación" />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800">{building?.name} — Conciliación</h1>
         <p className="text-sm text-slate-500 mt-1">Periodo: {periodLabel}</p>

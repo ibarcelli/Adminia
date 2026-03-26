@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { Breadcrumb } from '../../components/ui/Breadcrumb'
 import type { Building, PeriodStatus } from '../../types/database'
 
 function getNavItems(periodStatus: PeriodStatus | null) {
@@ -60,6 +61,7 @@ export function BuildingView() {
 
   return (
     <div className="p-8">
+      <Breadcrumb buildingName={building.name} />
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-1">
           <h1 className="text-2xl font-bold text-slate-800">{building.name}</h1>

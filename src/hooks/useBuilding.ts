@@ -67,5 +67,19 @@ export function useBuilding(buildingId: string | null) {
     return true
   }
 
-  return { building, loading, error, createBuilding, updateBuilding, refetch: fetchBuilding }
+  async function deleteBuilding(id: string): Promise<boolean> {
+    setError(null)
+
+    const { error: err } = await supabase
+      .from('buildings')
+      .delete()
+      .eq('id', id)
+
+    if (err) { setError(err.message); return false }
+
+    setBuilding(null)
+    return true
+  }
+
+  return { building, loading, error, createBuilding, updateBuilding, deleteBuilding, refetch: fetchBuilding }
 }
