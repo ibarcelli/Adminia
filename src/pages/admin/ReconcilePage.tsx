@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuthContext } from '../../components/AuthProvider'
 import { useBankImport } from '../../hooks/useBankImport'
@@ -13,6 +13,7 @@ import type { Building, Period, MatchConfidence } from '../../types/database'
 
 export function ReconcilePage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { user } = useAuthContext()
   const [building, setBuilding] = useState<Building | null>(null)
   const [publishedPeriod, setPublishedPeriod] = useState<Period | null>(null)
@@ -297,6 +298,16 @@ export function ReconcilePage() {
           </div>
         </div>
       )}
+
+      {/* Back to building button */}
+      <div className="mt-8 text-center">
+        <button
+          onClick={() => navigate(`/admin/buildings/${id}`)}
+          className="px-6 py-2 text-sm text-slate-600 border border-slate-300 rounded-md hover:bg-slate-100 transition-colors"
+        >
+          ← Volver al edificio
+        </button>
+      </div>
     </div>
   )
 }

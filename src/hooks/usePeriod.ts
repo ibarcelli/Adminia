@@ -82,6 +82,20 @@ export function usePeriod(buildingId: string | undefined) {
 
     setError(null)
 
+    // Check if period already exists for this month (avoid unique constraint error)
+    const { data: existing } = await supabase
+      .from('periods')
+      .select('*')
+      .eq('building_id', buildingId)
+      .eq('year', year)
+      .eq('month', month)
+      .maybeSingle()
+
+    if (existing) {
+      setPeriod(existing as Period)
+      return
+    }
+
     const { data, error: insertError } = await supabase
       .from('periods')
       .insert({

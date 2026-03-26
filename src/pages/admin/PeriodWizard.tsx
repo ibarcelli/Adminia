@@ -138,6 +138,29 @@ export function PeriodWizard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, period?.id])
 
+  // Auto-detect starting step based on existing data
+  const [initialStepSet, setInitialStepSet] = useState(false)
+  useEffect(() => {
+    if (initialStepSet || !period || loading) return
+
+    // If period is published/closed, don't change step (will show read-only message)
+    if (period.status !== 'draft') { setInitialStepSet(true); return }
+
+    const hasWater = period.water_total_cost > 0
+    const hasExpenses = expenses.length > 0
+
+    if (hasWater && hasExpenses && statements.length > 0) {
+      setStep(3)
+    } else if (hasWater && hasExpenses) {
+      setStep(2)
+    } else if (hasWater) {
+      setStep(2)
+    }
+    // else stay at step 1
+
+    setInitialStepSet(true)
+  }, [period, expenses.length, statements.length, loading, initialStepSet])
+
   if (loading || !building) {
     return <div className="p-8"><p className="text-slate-500">Cargando periodo...</p></div>
   }
@@ -876,6 +899,16 @@ export function PeriodWizard() {
           )}
         </div>
       )}
+
+      {/* Back to building button */}
+      <div className="mt-8 text-center">
+        <button
+          onClick={() => navigate(`/admin/buildings/${id}`)}
+          className="px-6 py-2 text-sm text-slate-600 border border-slate-300 rounded-md hover:bg-slate-100 transition-colors"
+        >
+          ← Volver al edificio
+        </button>
+      </div>
     </div>
   )
 }

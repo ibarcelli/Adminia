@@ -5,9 +5,26 @@ import { StatusBadge } from '../../components/ui/StatusBadge'
 import { Breadcrumb } from '../../components/ui/Breadcrumb'
 import type { Building, PeriodStatus } from '../../types/database'
 
-function getNavItems(periodStatus: PeriodStatus | null) {
-  const periodLabel = periodStatus === 'published' || periodStatus === 'closed' ? 'Ver periodo' : 'Periodo mensual'
-  const periodDesc = periodStatus === 'published' ? 'Periodo publicado' : periodStatus === 'closed' ? 'Periodo cerrado' : 'Lectura de agua, gastos y prorrateo'
+const monthNames = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+function getNavItems(periodStatus: PeriodStatus | null, periodMonth?: number, periodYear?: number) {
+  const periodInfo = periodMonth && periodYear ? ` — ${monthNames[periodMonth]} ${periodYear}` : ''
+  let periodLabel: string
+  let periodDesc: string
+
+  if (periodStatus === 'draft') {
+    periodLabel = `Continuar periodo${periodInfo}`
+    periodDesc = 'Lectura de agua, gastos y prorrateo'
+  } else if (periodStatus === 'published') {
+    periodLabel = `Ver periodo${periodInfo}`
+    periodDesc = 'Periodo publicado'
+  } else if (periodStatus === 'closed') {
+    periodLabel = `Ver periodo${periodInfo}`
+    periodDesc = 'Periodo cerrado'
+  } else {
+    periodLabel = 'Iniciar periodo'
+    periodDesc = 'Crear nuevo periodo mensual'
+  }
 
   return [
     { label: periodLabel, path: 'period', description: periodDesc },
@@ -22,6 +39,8 @@ export function BuildingView() {
   const navigate = useNavigate()
   const [building, setBuilding] = useState<Building | null>(null)
   const [periodStatus, setPeriodStatus] = useState<PeriodStatus | null>(null)
+  const [periodMonth, setPeriodMonth] = useState<number | undefined>()
+  const [periodYear, setPeriodYear] = useState<number | undefined>()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -38,7 +57,7 @@ export function BuildingView() {
 
       const { data: periodData } = await supabase
         .from('periods')
-        .select('status')
+        .select('status, month, year')
         .eq('building_id', id)
         .order('year', { ascending: false })
         .order('month', { ascending: false })
@@ -46,6 +65,8 @@ export function BuildingView() {
         .maybeSingle()
 
       setPeriodStatus((periodData?.status as PeriodStatus) ?? null)
+      setPeriodMonth(periodData?.month as number | undefined)
+      setPeriodYear(periodData?.year as number | undefined)
       setLoading(false)
     }
     fetch()
@@ -74,7 +95,7 @@ export function BuildingView() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {getNavItems(periodStatus).map((item) => (
+        {getNavItems(periodStatus, periodMonth, periodYear).map((item) => (
           <button
             key={item.path}
             onClick={() => navigate(`/admin/buildings/${id}/${item.path}`)}
