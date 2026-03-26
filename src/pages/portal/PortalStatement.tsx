@@ -1,5 +1,6 @@
 import { useAuthContext } from '../../components/AuthProvider'
 import { useCondoData } from '../../hooks/useCondoData'
+import { useReceipt } from '../../hooks/useReceipt'
 import { formatMoney } from '../../lib/formatters'
 
 const monthNames = [
@@ -10,6 +11,7 @@ const monthNames = [
 export function PortalStatement() {
   const { profile } = useAuthContext()
   const { unit, building, currentStatement, currentPeriod, loading, error } = useCondoData(profile?.unit_id)
+  const { loading: receiptLoading, getReceiptDataByPayment, downloadReceipt } = useReceipt()
 
   if (loading) return <p className="text-slate-500">Cargando...</p>
   if (error) return <p className="text-red-600">{error}</p>
@@ -80,13 +82,17 @@ export function PortalStatement() {
         </div>
       </div>
 
-      {/* Download receipt placeholder */}
+      {/* Download receipt */}
       {isPaid && (
         <button
-          disabled
-          className="w-full py-2.5 px-4 bg-slate-100 text-slate-400 font-medium rounded-md cursor-not-allowed text-sm"
+          onClick={async () => {
+            const data = await getReceiptDataByPayment(currentStatement.id)
+            if (data) await downloadReceipt(data)
+          }}
+          disabled={receiptLoading}
+          className="w-full py-2.5 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
         >
-          Descargar recibo (próximamente)
+          {receiptLoading ? 'Generando...' : 'Descargar recibo'}
         </button>
       )}
     </div>

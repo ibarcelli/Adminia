@@ -26,7 +26,7 @@ Producto SaaS vertical / herramienta interna web
 - **DoD:** Un condómino puede acceder via magic link, ver su estado de cuenta actual, revisar historial y descargar su recibo en PDF.
 
 ### Fase 5: Polish & Launch
-- **Status:** PENDIENTE
+- **Status:** EN PROGRESO (STORY-019, STORY-020 completadas)
 - **Objetivo:** UI pulida, manejo de errores, edge cases, prueba con un edificio real, ajustes
 - **DoD:** La dueña ha completado un ciclo mensual completo con un edificio real usando la plataforma. Condóminos de ese edificio acceden al portal sin problemas.
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Breadcrumb } from '../../components/ui/Breadcrumb'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { useReceipt } from '../../hooks/useReceipt'
 import { formatMoney, formatDate } from '../../lib/formatters'
 import type { Period, Building, Expense, StatementStatus } from '../../types/database'
 
@@ -31,6 +32,7 @@ interface PeriodReportProps {
 
 export function PeriodReport({ period, building, onReopen }: PeriodReportProps) {
   const navigate = useNavigate()
+  const { getReceiptDataByPayment, downloadReceipt } = useReceipt()
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [statements, setStatements] = useState<ReportStatement[]>([])
   const [loading, setLoading] = useState(true)
@@ -262,7 +264,19 @@ export function PeriodReport({ period, building, onReopen }: PeriodReportProps) 
                   <td className="py-1.5 px-2">
                     <StatusBadge type="statement" status={st.status} />
                   </td>
-                  <td className="py-1.5 px-2 text-slate-500 hidden sm:table-cell">{st.receipt_number || '—'}</td>
+                  <td className="py-1.5 px-2 hidden sm:table-cell">
+                    {st.receipt_number ? (
+                      <button
+                        onClick={async () => {
+                          const data = await getReceiptDataByPayment(st.id)
+                          if (data) await downloadReceipt(data)
+                        }}
+                        className="text-blue-600 hover:underline text-xs"
+                      >
+                        {st.receipt_number}
+                      </button>
+                    ) : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

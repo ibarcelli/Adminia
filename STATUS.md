@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 4 — Portal Condómino COMPLETADA
 - **Última actualización:** 2026-03-26
-- **Historia actual:** STORY-007c — gestión de múltiples periodos
+- **Historia actual:** STORY-019 + STORY-020 — recibo PDF + polish
 
 ## Resumen
 - Ejecución: EN PROGRESO — Fases 1-4 completadas
@@ -92,8 +92,17 @@
   - Ruta /admin/buildings/:id/period/:periodId para acceder a periodo específico
   - Ruta legacy /admin/buildings/:id/period sigue funcionando (busca draft más reciente)
 
+- **STORY-019:** Recibo PDF — COMPLETADO
+  - useReceipt hook: getReceiptData, getReceiptDataByPayment, downloadReceipt
+  - html2pdf.js para generación de PDF (code-split, carga bajo demanda)
+  - Recibo profesional: header Adminia, datos edificio/depto, desglose, total
+  - Integrado en: PortalStatement, PortalHistory, PeriodReport
+  - Click en número de recibo en admin descarga PDF
+- **STORY-020:** LoadingSpinner component reutilizable — COMPLETADO
+
 ## Próxima Acción
-- Fase 5: Polish & Launch
+- STORY-021: Prueba con edificio real
+- STORY-022: Deploy a producción
   - STORY-019: Generación de recibo PDF
   - STORY-020: Manejo de errores y edge cases
   - STORY-021: Prueba con edificio real

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuthContext } from '../../components/AuthProvider'
 import { useCondoData } from '../../hooks/useCondoData'
+import { useReceipt } from '../../hooks/useReceipt'
 import type { StatementWithPeriod } from '../../hooks/useCondoData'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { formatMoney } from '../../lib/formatters'
@@ -35,14 +36,15 @@ export function PortalHistory() {
   return (
     <div className="space-y-2">
       {history.map((stmt) => (
-        <HistoryRow key={stmt.id} stmt={stmt} />
+        <HistoryRow key={stmt.id} stmt={stmt} useReceiptHook={useReceipt} />
       ))}
     </div>
   )
 }
 
-function HistoryRow({ stmt }: { stmt: StatementWithPeriod }) {
+function HistoryRow({ stmt, useReceiptHook }: { stmt: StatementWithPeriod; useReceiptHook: typeof useReceipt }) {
   const [expanded, setExpanded] = useState(false)
+  const { loading: receiptLoading, getReceiptDataByPayment, downloadReceipt } = useReceiptHook()
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
@@ -85,8 +87,15 @@ function HistoryRow({ stmt }: { stmt: StatementWithPeriod }) {
             </div>
           )}
           {stmt.status === 'paid' && (
-            <button disabled className="w-full mt-2 py-2 px-4 bg-slate-100 text-slate-400 text-sm rounded-md cursor-not-allowed">
-              Descargar recibo (próximamente)
+            <button
+              onClick={async () => {
+                const data = await getReceiptDataByPayment(stmt.id)
+                if (data) await downloadReceipt(data)
+              }}
+              disabled={receiptLoading}
+              className="w-full mt-2 py-2 px-4 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {receiptLoading ? 'Generando...' : 'Descargar recibo'}
             </button>
           )}
         </div>
