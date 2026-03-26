@@ -1,8 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-
-function Login() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Adminia</h1><p className="mt-2 text-gray-600">Iniciar sesión</p></div>
-}
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './components/AuthProvider'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { LoginPage } from './pages/LoginPage'
 
 function AdminDashboard() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Dashboard Admin</h1></div>
@@ -43,23 +42,30 @@ function PortalBuilding() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Auth */}
-        <Route path="/login" element={<Login />} />
+      <AuthProvider>
+        <Routes>
+          {/* Redirect root to login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Admin */}
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/buildings/:id" element={<BuildingDetail />} />
-        <Route path="/admin/buildings/:id/period" element={<BuildingPeriod />} />
-        <Route path="/admin/buildings/:id/reconcile" element={<BuildingReconcile />} />
-        <Route path="/admin/buildings/:id/arrears" element={<BuildingArrears />} />
-        <Route path="/admin/buildings/:id/settings" element={<BuildingSettings />} />
+          {/* Auth */}
+          <Route path="/login" element={<LoginPage />} />
 
-        {/* Portal Condómino */}
-        <Route path="/portal" element={<PortalHome />} />
-        <Route path="/portal/history" element={<PortalHistory />} />
-        <Route path="/portal/building" element={<PortalBuilding />} />
-      </Routes>
+          {/* Admin (protected) */}
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/buildings/:id" element={<BuildingDetail />} />
+            <Route path="/admin/buildings/:id/period" element={<BuildingPeriod />} />
+            <Route path="/admin/buildings/:id/reconcile" element={<BuildingReconcile />} />
+            <Route path="/admin/buildings/:id/arrears" element={<BuildingArrears />} />
+            <Route path="/admin/buildings/:id/settings" element={<BuildingSettings />} />
+          </Route>
+
+          {/* Portal Condómino (no protection yet — STORY-015) */}
+          <Route path="/portal" element={<PortalHome />} />
+          <Route path="/portal/history" element={<PortalHistory />} />
+          <Route path="/portal/building" element={<PortalBuilding />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

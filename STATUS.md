@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 1 — Foundation
 - **Última actualización:** 2026-03-25
-- **Historia actual:** STORY-002 completada
+- **Historia actual:** STORY-003 y STORY-004 completadas
 
 ## Resumen
 - Reason: COMPLETADO
@@ -14,20 +14,26 @@
 ## Últimas Ejecuciones
 - **STORY-001:** Scaffold del proyecto — COMPLETADO
 - **STORY-002:** Esquema de base de datos — COMPLETADO
-  - 6 enums creados (bank_account_type, period_status, expense_category, statement_status, match_status, user_role)
-  - 11 tablas con FKs, constraints, defaults
-  - Tabla `profiles` (no `users`) para no chocar con auth.users de Supabase
-  - UNIQUE constraints en periods(building_id, year, month) y statements(period_id, unit_id)
-  - 8 indexes en columnas de búsqueda frecuente
-  - RLS habilitado en todas las tablas
-  - Policies admin (full CRUD) y condo (read limitado) implementadas
-  - Helper functions auth.user_role() y auth.user_unit_id()
-  - database.ts actualizado: User → Profile
+- **STORY-003:** Autenticación admin — COMPLETADO
+  - useAuth hook con signIn/signOut y escucha de sesión
+  - AuthProvider context para toda la app
+  - ProtectedRoute con validación de roles
+  - LoginPage con formulario, error handling, redirect automático
+  - Rutas /admin/* protegidas, /portal/* abiertas (STORY-015)
+  - seed_admin.sql con instrucciones para Ives
+- **STORY-004:** Seed data de prueba — COMPLETADO
+  - 1 organización (Adminia)
+  - 3 edificios: Los Olivos (6), Torre Miraflores (20), San Borja (47) = 73 deptos
+  - Nombres peruanos realistas, m² variados
+  - 2 periodos para Los Olivos (enero closed, febrero draft)
+  - 5 gastos para enero (limpieza, seguridad, ascensor, luz, agua)
+  - 6 statements con prorrateo correcto por m² (4 paid, 2 pending)
 
 ## Próxima Acción
 - Ives ejecuta 001_initial_schema.sql en Supabase SQL Editor
-- STORY-003: Autenticación admin
-- STORY-004: Seed data de prueba
+- Ives crea usuario admin en Supabase Auth y ejecuta seed_admin.sql
+- Ives ejecuta 002_seed_data.sql en Supabase SQL Editor
+- STORY-005: Dashboard admin — lista de edificios
 
 ## Blockers
-- Pendiente: Ives ejecuta la migration en Supabase SQL Editor
+- Pendiente: Ives ejecuta migrations y seeds en Supabase

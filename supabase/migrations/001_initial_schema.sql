@@ -175,13 +175,13 @@ ALTER TABLE receipts ENABLE ROW LEVEL SECURITY;
 -- ========================
 
 -- Get current user's role from profiles
-CREATE OR REPLACE FUNCTION auth.user_role()
+CREATE OR REPLACE FUNCTION public.user_role()
 RETURNS user_role AS $$
   SELECT role FROM profiles WHERE id = auth.uid()
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- Get current user's unit_id from profiles
-CREATE OR REPLACE FUNCTION auth.user_unit_id()
+CREATE OR REPLACE FUNCTION public.user_unit_id()
 RETURNS uuid AS $$
   SELECT unit_id FROM profiles WHERE id = auth.uid()
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
@@ -192,19 +192,19 @@ $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- Organizations
 CREATE POLICY "admin_all_organizations" ON organizations
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Buildings
 CREATE POLICY "admin_all_buildings" ON buildings
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Units
 CREATE POLICY "admin_all_units" ON units
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Profiles
 CREATE POLICY "admin_all_profiles" ON profiles
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Users can read their own profile
 CREATE POLICY "users_read_own_profile" ON profiles
@@ -212,31 +212,31 @@ CREATE POLICY "users_read_own_profile" ON profiles
 
 -- Periods
 CREATE POLICY "admin_all_periods" ON periods
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Expenses
 CREATE POLICY "admin_all_expenses" ON expenses
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Statements
 CREATE POLICY "admin_all_statements" ON statements
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Bank Imports
 CREATE POLICY "admin_all_bank_imports" ON bank_imports
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Bank Transactions
 CREATE POLICY "admin_all_bank_transactions" ON bank_transactions
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Payments
 CREATE POLICY "admin_all_payments" ON payments
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- Receipts
 CREATE POLICY "admin_all_receipts" ON receipts
-  FOR ALL USING (auth.user_role() = 'admin');
+  FOR ALL USING (public.user_role() = 'admin');
 
 -- ========================
 -- CONDO POLICIES (limited read)
@@ -245,38 +245,38 @@ CREATE POLICY "admin_all_receipts" ON receipts
 -- Condóminos: read buildings (their own building via unit)
 CREATE POLICY "condo_read_buildings" ON buildings
   FOR SELECT USING (
-    auth.user_role() = 'condo'
+    public.user_role() = 'condo'
     AND id IN (
-      SELECT building_id FROM units WHERE id = auth.user_unit_id()
+      SELECT building_id FROM units WHERE id = public.user_unit_id()
     )
   );
 
 -- Condóminos: read their own unit
 CREATE POLICY "condo_read_own_unit" ON units
   FOR SELECT USING (
-    auth.user_role() = 'condo'
-    AND id = auth.user_unit_id()
+    public.user_role() = 'condo'
+    AND id = public.user_unit_id()
   );
 
 -- Condóminos: read published periods (for their building)
 CREATE POLICY "condo_read_published_periods" ON periods
   FOR SELECT USING (
-    auth.user_role() = 'condo'
+    public.user_role() = 'condo'
     AND status = 'published'
     AND building_id IN (
-      SELECT building_id FROM units WHERE id = auth.user_unit_id()
+      SELECT building_id FROM units WHERE id = public.user_unit_id()
     )
   );
 
 -- Condóminos: read expenses of published periods
 CREATE POLICY "condo_read_published_expenses" ON expenses
   FOR SELECT USING (
-    auth.user_role() = 'condo'
+    public.user_role() = 'condo'
     AND period_id IN (
       SELECT id FROM periods
       WHERE status = 'published'
       AND building_id IN (
-        SELECT building_id FROM units WHERE id = auth.user_unit_id()
+        SELECT building_id FROM units WHERE id = public.user_unit_id()
       )
     )
   );
@@ -284,27 +284,27 @@ CREATE POLICY "condo_read_published_expenses" ON expenses
 -- Condóminos: read their own statements
 CREATE POLICY "condo_read_own_statements" ON statements
   FOR SELECT USING (
-    auth.user_role() = 'condo'
-    AND unit_id = auth.user_unit_id()
+    public.user_role() = 'condo'
+    AND unit_id = public.user_unit_id()
   );
 
 -- Condóminos: read their own payments
 CREATE POLICY "condo_read_own_payments" ON payments
   FOR SELECT USING (
-    auth.user_role() = 'condo'
+    public.user_role() = 'condo'
     AND statement_id IN (
-      SELECT id FROM statements WHERE unit_id = auth.user_unit_id()
+      SELECT id FROM statements WHERE unit_id = public.user_unit_id()
     )
   );
 
 -- Condóminos: read their own receipts
 CREATE POLICY "condo_read_own_receipts" ON receipts
   FOR SELECT USING (
-    auth.user_role() = 'condo'
+    public.user_role() = 'condo'
     AND payment_id IN (
       SELECT id FROM payments
       WHERE statement_id IN (
-        SELECT id FROM statements WHERE unit_id = auth.user_unit_id()
+        SELECT id FROM statements WHERE unit_id = public.user_unit_id()
       )
     )
   );
