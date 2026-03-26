@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { WizardStepper } from '../../components/ui/WizardStepper'
 import { Breadcrumb } from '../../components/ui/Breadcrumb'
 import { FileUploader } from '../../components/ui/FileUploader'
+import { PeriodReport } from './PeriodReport'
 import { usePeriod } from '../../hooks/usePeriod'
 import { useExpenses } from '../../hooks/useExpenses'
 import { useStatements } from '../../hooks/useStatements'
@@ -26,7 +27,7 @@ export function PeriodWizard() {
     currentYear, currentMonth,
     createPeriod, updateWaterReading,
     fetchUnitReadings, autoFillPreviousReadings, saveUnitReadings,
-    publishPeriod,
+    reopenPeriod, publishPeriod,
   } = usePeriod(id)
 
   const [building, setBuilding] = useState<Building | null>(null)
@@ -163,6 +164,11 @@ export function PeriodWizard() {
 
   if (loading || !building) {
     return <div className="p-8"><p className="text-slate-500">Cargando periodo...</p></div>
+  }
+
+  // Show report view for published/closed periods
+  if (period && (period.status === 'published' || period.status === 'closed')) {
+    return <PeriodReport period={period} building={building} onReopen={reopenPeriod} />
   }
 
   const isIndividual = building.water_metering_type === 'individual'

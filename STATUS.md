@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 4 — Portal Condómino COMPLETADA
 - **Última actualización:** 2026-03-26
-- **Historia actual:** STORY-006b + STORY-008b completadas + 3 bugfixes
+- **Historia actual:** Reporte de periodo publicado + reabrir periodo
 
 ## Resumen
 - Ejecución: EN PROGRESO — Fases 1-4 completadas
@@ -56,6 +56,15 @@
   - Modal de importación en paso 2 del wizard
   - Admin puede desmarcar, editar concepto y categoría antes de importar
   - Gastos importados se suman a los manuales existentes
+
+- **Vista reporte de periodo publicado** — COMPLETADO
+  - PeriodReport: resumen del periodo, ingresos/egresos, estados de cuenta por depto
+  - Departamentos pagados (verde) vs pendientes (amarillo)
+  - Números de recibo visibles en tabla
+  - Balance cobrado - gastos
+  - Botón "Reabrir periodo" con confirmación → vuelve a draft
+  - reopenPeriod() en usePeriod hook
+  - BuildingView: "Ver reporte — Mes Año" para periodos publicados
 
 ## Próxima Acción
 - Fase 5: Polish & Launch

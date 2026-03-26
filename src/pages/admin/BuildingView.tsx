@@ -16,10 +16,10 @@ function getNavItems(periodStatus: PeriodStatus | null, periodMonth?: number, pe
     periodLabel = `Continuar periodo${periodInfo}`
     periodDesc = 'Lectura de agua, gastos y prorrateo'
   } else if (periodStatus === 'published') {
-    periodLabel = `Ver periodo${periodInfo}`
+    periodLabel = `Ver reporte${periodInfo}`
     periodDesc = 'Periodo publicado'
   } else if (periodStatus === 'closed') {
-    periodLabel = `Ver periodo${periodInfo}`
+    periodLabel = `Ver reporte${periodInfo}`
     periodDesc = 'Periodo cerrado'
   } else {
     periodLabel = 'Iniciar periodo'
