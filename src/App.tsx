@@ -7,10 +7,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard'
 import { BuildingView } from './pages/admin/BuildingView'
 import { PeriodWizard } from './pages/admin/PeriodWizard'
 import { ReconcilePage } from './pages/admin/ReconcilePage'
-
-function BuildingArrears() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Morosidad</h1></div>
-}
+import { ArrearsPage } from './pages/admin/ArrearsPage'
 
 function BuildingSettings() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Configuración del Edificio</h1></div>
@@ -46,7 +43,7 @@ export default function App() {
               <Route path="/admin/buildings/:id" element={<BuildingView />} />
               <Route path="/admin/buildings/:id/period" element={<PeriodWizard />} />
               <Route path="/admin/buildings/:id/reconcile" element={<ReconcilePage />} />
-              <Route path="/admin/buildings/:id/arrears" element={<BuildingArrears />} />
+              <Route path="/admin/buildings/:id/arrears" element={<ArrearsPage />} />
               <Route path="/admin/buildings/:id/settings" element={<BuildingSettings />} />
             </Route>
           </Route>

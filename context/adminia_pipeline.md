@@ -16,7 +16,7 @@ Producto SaaS vertical / herramienta interna web
 - **DoD:** La dueña puede completar el ciclo de prorrateo para un edificio desde el dashboard. Estados de cuenta se generan automáticamente.
 
 ### Fase 3: Conciliación (Pagos y recibos)
-- **Status:** EN PROGRESO (STORY-011 a STORY-013 completadas)
+- **Status:** COMPLETADO (STORY-011 a STORY-014)
 - **Objetivo:** Importación de extracto bancario, matching semi-automático, generación de recibos, visibilidad de morosidad
 - **DoD:** La dueña puede importar un extracto, confirmar matches, y los condóminos que pagaron tienen recibo generado. Los morosos aparecen marcados.
 
