@@ -14,6 +14,10 @@ export type UserRole = 'admin' | 'condo'
 
 export type WaterMeteringType = 'individual' | 'general'
 
+export type TransactionType = 'income' | 'expense'
+
+export type MatchConfidence = 'high' | 'medium_unit' | 'medium_amount' | null
+
 // Tables
 
 export interface Organization {
@@ -107,6 +111,10 @@ export interface BankTransaction {
   description: string
   matched_unit_id: string | null
   match_status: MatchStatus
+  transaction_type: TransactionType
+  unit_number: string | null
+  concept: string | null
+  match_confidence: MatchConfidence
   created_at: string
 }
 

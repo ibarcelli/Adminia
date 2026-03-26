@@ -3,7 +3,7 @@
 ## Estado Actual
 - **Fase:** 3 — Conciliación
 - **Última actualización:** 2026-03-25
-- **Historia actual:** STORY-011, STORY-012, STORY-013 completadas
+- **Historia actual:** STORY-011b completada
 
 ## Resumen
 - Reason: COMPLETADO
@@ -13,24 +13,23 @@
 
 ## Últimas Ejecuciones
 - **STORY-001 a 005:** Foundation + Dashboard — COMPLETADO
-- **STORY-007 a 010:** Wizard mensual completo (4 pasos) — COMPLETADO
-- **STORY-011:** Importar extracto bancario — COMPLETADO
-  - FileUploader: drag & drop + click, solo .xlsx/.xls
-  - useBankImport: parseo con SheetJS, auto-detección de columnas
-  - Preview de primeras 5 filas antes de confirmar
-  - Reimportar borra anterior
-  - Bloquea acceso si no hay periodo publicado
-- **STORY-012 + 013:** Match automático + confirmar pagos + recibos — COMPLETADO
-  - useReconciliation: runAutoMatch (monto exacto), manualMatch, rejectMatch, confirmMatch
-  - Auto-match: match único → suggested, múltiple → unmatched para manual
-  - Confirmar: crea payment, actualiza statement a 'paid', genera receipt (ADM-YYYY-NNN)
-  - Confirmar todos los sugeridos con modal de confirmación
-  - Panel de stats: importados, sugeridos, confirmados, sin asignar
-  - Tabla con status badges, acciones por fila, dropdown asignación manual
+- **STORY-007 a 010:** Wizard mensual completo — COMPLETADO
+- **STORY-011 a 013:** Conciliación bancaria — COMPLETADO
+- **STORY-011b:** Refactor para formato real BCP — COMPLETADO
+  - Parser BCP: columnas posicionales, fechas mixtas, filas vacías/notas
+  - Separación ingresos/egresos automática
+  - Egresos marcados como 'confirmed' al importar (informativos)
+  - Auto-match con 5 prioridades: unit+monto (alta), solo unit (media), solo monto (media), ambiguo, sin match
+  - match_confidence: high, medium_unit, medium_amount
+  - Vista con tabs Ingresos/Egresos
+  - Badges de confianza, warning "Monto no coincide" para medium_unit
+  - Migration 004: transaction_type, unit_number, concept, match_confidence
+  - DEC-013 documentada
 
 ## Próxima Acción
-- STORY-014: Vista de morosidad
-- O Fase 4: Portal condómino (STORY-015 en adelante)
+- Ives ejecuta 004_bank_transactions_update.sql en Supabase
+- STORY-014: Vista de morosidad (cierra Fase 3)
+- O Fase 4: Portal condómino (STORY-015+)
 
 ## Blockers
-- Pendiente: Ives ejecuta migrations y seeds en Supabase para testing real
+- Pendiente: Ives ejecuta migrations en Supabase para testing real

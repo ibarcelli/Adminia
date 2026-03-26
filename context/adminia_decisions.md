@@ -50,3 +50,14 @@ Decisiones canónicas del proyecto. No se reabren sin aprobación del Human Lead
 ## DEC-012: Dos modalidades de prorrateo de agua
 - **Decisión:** Cada edificio tiene un campo `water_metering_type` que puede ser `'individual'` (sub-medidores por departamento) o `'general'` (medidor único del edificio). El wizard paso 1 se adapta según la modalidad.
 - **Razón:** La realidad operativa de Adminia es mixta — algunos edificios tienen medidores individuales por departamento (la factura sigue siendo una sola), otros solo tienen medidor general. La modalidad individual prorratea por consumo real; la general prorratea por m².
+
+## DEC-013: Formato de extracto bancario BCP
+- **Decisión:** El parser de extractos bancarios está diseñado para el formato real de BCP Perú. Estructura por columnas posicionales: A=Fecha, B=Tipo operación, C=Referencia, D=Ingreso, E=Egreso, F=Número depto, G=Descripción, H=Concepto. Ingresos y egresos mezclados en el mismo archivo.
+- **Razón:** El extracto real de Adminia (BCP) tiene esta estructura específica. El parser maneja fechas inconsistentes (datetime/string), filas vacías, filas de notas, y separa ingresos de egresos automáticamente.
+- **Lógica de auto-match (5 prioridades):**
+  1. unit_number + monto exacto → confianza alta
+  2. unit_number sin monto exacto → confianza media (depto)
+  3. Monto exacto único → confianza media (monto)
+  4. Monto ambiguo (múltiples deptos) → sin match
+  5. Sin datos → sin match
+- **Egresos** se marcan automáticamente como confirmados (son informativos, no pagos de condóminos).

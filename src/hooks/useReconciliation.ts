@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import type { BankTransaction, MatchStatus } from '../types/database'
+import type { BankTransaction, MatchStatus, MatchConfidence } from '../types/database'
 
 export interface TransactionRow extends BankTransaction {
-  unit_number: string | null
+  matched_unit_number: string | null
   receipt_number: string | null
 }
 
@@ -20,12 +20,16 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const incomeTransactions = transactions.filter((t) => t.transaction_type === 'income')
+  const expenseTransactions = transactions.filter((t) => t.transaction_type === 'expense')
+
   const stats = {
-    total: transactions.length,
-    suggested: transactions.filter((t) => t.match_status === 'suggested').length,
-    confirmed: transactions.filter((t) => t.match_status === 'confirmed').length,
-    unmatched: transactions.filter((t) => t.match_status === 'unmatched').length,
-    rejected: transactions.filter((t) => t.match_status === 'rejected').length,
+    totalIncome: incomeTransactions.length,
+    totalExpense: expenseTransactions.length,
+    suggested: incomeTransactions.filter((t) => t.match_status === 'suggested').length,
+    confirmed: incomeTransactions.filter((t) => t.match_status === 'confirmed').length,
+    unmatched: incomeTransactions.filter((t) => t.match_status === 'unmatched').length,
+    rejected: incomeTransactions.filter((t) => t.match_status === 'rejected').length,
   }
 
   const fetchAll = useCallback(async () => {
@@ -34,7 +38,6 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
     setLoading(true)
     setError(null)
 
-    // Get bank imports for this period
     const { data: imports } = await supabase
       .from('bank_imports')
       .select('id')
@@ -48,19 +51,19 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
       return
     }
 
-    // Get transactions with unit info
+    // Get transactions with matched unit info
     const { data: txns } = await supabase
       .from('bank_transactions')
-      .select('*, units(unit_number)')
+      .select('*, units:matched_unit_id(unit_number)')
       .in('bank_import_id', importIds)
       .order('date')
 
-    // Get receipts for confirmed transactions
+    // Get receipts for confirmed income transactions
     const confirmedIds = (txns ?? [])
-      .filter((t: { match_status: string }) => t.match_status === 'confirmed')
+      .filter((t: { match_status: string; transaction_type: string }) => t.match_status === 'confirmed' && t.transaction_type === 'income')
       .map((t: { id: string }) => t.id)
 
-    let receiptMap = new Map<string, string>()
+    const receiptMap = new Map<string, string>()
     if (confirmedIds.length > 0) {
       const { data: payments } = await supabase
         .from('payments')
@@ -69,15 +72,13 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
 
       for (const p of (payments ?? []) as unknown as { bank_transaction_id: string; receipts: { receipt_number: string }[] }[]) {
         const receipt = Array.isArray(p.receipts) ? p.receipts[0] : p.receipts
-        if (receipt) {
-          receiptMap.set(p.bank_transaction_id, receipt.receipt_number)
-        }
+        if (receipt) receiptMap.set(p.bank_transaction_id, receipt.receipt_number)
       }
     }
 
-    const rows: TransactionRow[] = ((txns ?? []) as (BankTransaction & { units: { unit_number: string } | null })[]).map((t) => ({
+    const rows: TransactionRow[] = ((txns ?? []) as unknown as (BankTransaction & { units: { unit_number: string } | null })[]).map((t) => ({
       ...t,
-      unit_number: t.units?.unit_number ?? null,
+      matched_unit_number: t.units?.unit_number ?? null,
       receipt_number: receiptMap.get(t.id) ?? null,
     }))
 
@@ -92,12 +93,7 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
 
     const pending: PendingStatement[] = ((stmts ?? []) as unknown as { id: string; unit_id: string; total_due: number; units: { unit_number: string }[] }[]).map((s) => {
       const unit = Array.isArray(s.units) ? s.units[0] : s.units
-      return {
-        id: s.id,
-        unit_id: s.unit_id,
-        unit_number: unit?.unit_number ?? '',
-        total_due: s.total_due,
-      }
+      return { id: s.id, unit_id: s.unit_id, unit_number: unit?.unit_number ?? '', total_due: s.total_due }
     })
 
     pending.sort((a, b) => a.unit_number.localeCompare(b.unit_number, undefined, { numeric: true }))
@@ -106,29 +102,98 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
   }, [periodId, buildingId])
 
   async function runAutoMatch() {
-    if (!periodId) return
+    if (!periodId || !buildingId) return
 
     setLoading(true)
     setError(null)
 
-    // Refresh data first
+    // Re-fetch fresh data
     await fetchAll()
 
-    const unmatchedTxns = transactions.filter((t) => t.match_status === 'unmatched')
-    const pending = [...pendingStatements]
+    // Get units for this building to map unit_number → unit_id
+    const { data: units } = await supabase
+      .from('units')
+      .select('id, unit_number')
+      .eq('building_id', buildingId)
+      .eq('is_active', true)
 
-    for (const txn of unmatchedTxns) {
-      const matches = pending.filter((s) => Math.abs(s.total_due - txn.amount) < 0.01)
+    const unitNumberToId = new Map<string, string>()
+    for (const u of (units ?? []) as { id: string; unit_number: string }[]) {
+      unitNumberToId.set(u.unit_number, u.id)
+    }
 
-      if (matches.length === 1) {
-        const { error: updateErr } = await supabase
-          .from('bank_transactions')
-          .update({ match_status: 'suggested', matched_unit_id: matches[0].unit_id })
-          .eq('id', txn.id)
+    // Re-query current unmatched income transactions
+    const { data: imports } = await supabase.from('bank_imports').select('id').eq('period_id', periodId)
+    const importIds = (imports ?? []).map((i: { id: string }) => i.id)
+    const { data: currentTxns } = await supabase
+      .from('bank_transactions')
+      .select('*')
+      .in('bank_import_id', importIds)
+      .eq('match_status', 'unmatched')
+      .eq('transaction_type', 'income')
 
-        if (updateErr) { setError(updateErr.message); continue }
+    // Re-query current pending statements
+    const { data: currentStmts } = await supabase
+      .from('statements')
+      .select('id, unit_id, total_due, units(unit_number)')
+      .eq('period_id', periodId)
+      .eq('status', 'pending')
+
+    const pendingStmts = ((currentStmts ?? []) as unknown as { id: string; unit_id: string; total_due: number; units: { unit_number: string }[] }[]).map((s) => {
+      const unit = Array.isArray(s.units) ? s.units[0] : s.units
+      return { id: s.id, unit_id: s.unit_id, unit_number: unit?.unit_number ?? '', total_due: s.total_due }
+    })
+
+    for (const txn of (currentTxns ?? []) as BankTransaction[]) {
+      let matchedUnitId: string | null = null
+      let confidence: MatchConfidence = null
+
+      // Priority 1: unit_number + exact amount match
+      if (txn.unit_number) {
+        const unitId = unitNumberToId.get(txn.unit_number)
+        if (unitId) {
+          const stmt = pendingStmts.find((s) => s.unit_id === unitId && Math.abs(s.total_due - txn.amount) < 0.01)
+          if (stmt) {
+            matchedUnitId = unitId
+            confidence = 'high'
+          }
+        }
       }
-      // Multiple matches or no match: leave as unmatched
+
+      // Priority 2: unit_number only (amount doesn't match)
+      if (!matchedUnitId && txn.unit_number) {
+        const unitId = unitNumberToId.get(txn.unit_number)
+        if (unitId) {
+          const hasStmt = pendingStmts.find((s) => s.unit_id === unitId)
+          if (hasStmt) {
+            matchedUnitId = unitId
+            confidence = 'medium_unit'
+          }
+        }
+      }
+
+      // Priority 3: exact amount match (unique)
+      if (!matchedUnitId) {
+        const amountMatches = pendingStmts.filter((s) => Math.abs(s.total_due - txn.amount) < 0.01)
+        if (amountMatches.length === 1) {
+          matchedUnitId = amountMatches[0].unit_id
+          confidence = 'medium_amount'
+        }
+        // Priority 4: multiple amount matches → leave unmatched
+      }
+
+      // Priority 5: no match at all → leave unmatched
+
+      if (matchedUnitId) {
+        await supabase
+          .from('bank_transactions')
+          .update({
+            match_status: 'suggested' as MatchStatus,
+            matched_unit_id: matchedUnitId,
+            match_confidence: confidence,
+          })
+          .eq('id', txn.id)
+      }
     }
 
     await fetchAll()
@@ -137,10 +202,9 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
 
   async function manualMatch(transactionId: string, unitId: string) {
     setError(null)
-
     const { error: err } = await supabase
       .from('bank_transactions')
-      .update({ match_status: 'suggested' as MatchStatus, matched_unit_id: unitId })
+      .update({ match_status: 'suggested' as MatchStatus, matched_unit_id: unitId, match_confidence: 'high' })
       .eq('id', transactionId)
 
     if (err) { setError(err.message); return }
@@ -149,10 +213,9 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
 
   async function rejectMatch(transactionId: string) {
     setError(null)
-
     const { error: err } = await supabase
       .from('bank_transactions')
-      .update({ match_status: 'unmatched' as MatchStatus, matched_unit_id: null })
+      .update({ match_status: 'unmatched' as MatchStatus, matched_unit_id: null, match_confidence: null })
       .eq('id', transactionId)
 
     if (err) { setError(err.message); return }
@@ -165,7 +228,6 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
     const txn = transactions.find((t) => t.id === transactionId)
     if (!txn || !txn.matched_unit_id || !periodId) return
 
-    // Find the statement for this unit
     const { data: stmt } = await supabase
       .from('statements')
       .select('id')
@@ -175,7 +237,6 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
 
     if (!stmt) { setError('Estado de cuenta no encontrado'); return }
 
-    // Update transaction to confirmed
     const { error: txnErr } = await supabase
       .from('bank_transactions')
       .update({ match_status: 'confirmed' as MatchStatus })
@@ -183,7 +244,6 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
 
     if (txnErr) { setError(txnErr.message); return }
 
-    // Create payment
     const { data: payment, error: payErr } = await supabase
       .from('payments')
       .insert({
@@ -198,40 +258,27 @@ export function useReconciliation(periodId: string | undefined, buildingId: stri
 
     if (payErr) { setError(payErr.message); return }
 
-    // Update statement to paid
-    await supabase
-      .from('statements')
-      .update({ status: 'paid' })
-      .eq('id', stmt.id)
+    await supabase.from('statements').update({ status: 'paid' }).eq('id', stmt.id)
 
-    // Generate receipt number
     const year = new Date().getFullYear()
-    const { count } = await supabase
-      .from('receipts')
-      .select('*', { count: 'exact', head: true })
-
+    const { count } = await supabase.from('receipts').select('*', { count: 'exact', head: true })
     const num = (count ?? 0) + 1
     const receiptNumber = `ADM-${year}-${String(num).padStart(3, '0')}`
 
-    await supabase
-      .from('receipts')
-      .insert({
-        payment_id: payment.id,
-        receipt_number: receiptNumber,
-      })
-
+    await supabase.from('receipts').insert({ payment_id: payment.id, receipt_number: receiptNumber })
     await fetchAll()
   }
 
   async function confirmAllSuggested(adminId: string) {
-    const suggested = transactions.filter((t) => t.match_status === 'suggested')
+    const suggested = transactions.filter((t) => t.match_status === 'suggested' && t.transaction_type === 'income')
     for (const txn of suggested) {
       await confirmMatch(txn.id, adminId)
     }
   }
 
   return {
-    transactions, pendingStatements, loading, error, stats,
+    transactions, incomeTransactions, expenseTransactions,
+    pendingStatements, loading, error, stats,
     fetchAll, runAutoMatch, manualMatch, rejectMatch, confirmMatch, confirmAllSuggested,
   }
 }

@@ -101,8 +101,12 @@
 | amount | decimal | Monto |
 | reference | text | Referencia bancaria |
 | description | text | Descripción del banco |
+| transaction_type | enum | 'income' o 'expense' (DEC-013) |
+| unit_number | text | Número de depto del Excel, nullable |
+| concept | text | Concepto/mes del pago, nullable |
 | matched_unit_id | uuid | FK → units, nullable |
 | match_status | enum | 'unmatched', 'suggested', 'confirmed', 'rejected' |
+| match_confidence | text | 'high', 'medium_unit', 'medium_amount', null |
 | created_at | timestamp | |
 
 ### payments
@@ -202,10 +206,15 @@ gastos_depto = gastos_por_m2 * m2_depto
 total_depto = agua_depto + gastos_depto + saldo_anterior
 ```
 
-## Lógica de Conciliación
-1. Parsear Excel del banco → extraer fecha, monto, referencia
-2. Para cada movimiento, buscar statements pendientes con monto exacto igual
-3. Si hay match único → status = 'suggested'
-4. Si hay match múltiple (dos deptos deben lo mismo) → admin elige
-5. Si no hay match → queda 'unmatched' para revisión manual
-6. Admin confirma → se crea payment + receipt, statement pasa a 'paid'
+## Lógica de Conciliación (DEC-013)
+1. Parsear Excel BCP → separar ingresos (Col D) y egresos (Col E)
+2. Egresos se marcan automáticamente como 'confirmed' (informativos)
+3. Para cada ingreso, auto-match con 5 prioridades:
+   - P1: unit_number + monto exacto → suggested (confianza alta)
+   - P2: unit_number sin monto exacto → suggested (confianza media - depto)
+   - P3: Monto exacto único → suggested (confianza media - monto)
+   - P4: Monto ambiguo (múltiples deptos) → unmatched
+   - P5: Sin datos → unmatched
+4. Admin revisa sugerencias, confirma o rechaza
+5. Admin puede asignar manualmente transacciones sin match
+6. Al confirmar → se crea payment + receipt (ADM-YYYY-NNN), statement pasa a 'paid'
