@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { WizardStepper } from '../../components/ui/WizardStepper'
 import { usePeriod } from '../../hooks/usePeriod'
@@ -16,12 +16,14 @@ const monthNames = [
 
 export function PeriodWizard() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const {
     period, previousReading, unitReadings, setUnitReadings,
     loading, error,
     currentYear, currentMonth,
     createPeriod, updateWaterReading,
     fetchUnitReadings, autoFillPreviousReadings, saveUnitReadings,
+    publishPeriod,
   } = usePeriod(id)
 
   const [building, setBuilding] = useState<Building | null>(null)
@@ -45,6 +47,10 @@ export function PeriodWizard() {
   const [newConcept, setNewConcept] = useState('')
   const [newAmount, setNewAmount] = useState('')
   const [newCategory, setNewCategory] = useState<ExpenseCategory>('fixed')
+
+  // Step 4: Publish
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [published, setPublished] = useState(false)
 
   // Step 3: Statements
   const {
@@ -636,12 +642,139 @@ export function PeriodWizard() {
         </div>
       )}
 
+      {/* Step 4: Publish */}
       {step === 4 && (
-        <div className="max-w-md bg-white border border-slate-200 rounded-lg p-6">
-          <p className="text-slate-500">Paso 4 — Publicar — Próximamente (STORY-010)</p>
-          <button onClick={() => setStep(3)} className="mt-4 text-sm text-blue-600 hover:underline">
-            Volver al paso anterior
-          </button>
+        <div className="max-w-lg">
+          {published ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+              <svg className="w-12 h-12 text-green-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h2 className="text-lg font-semibold text-green-800 mb-2">Estados de cuenta publicados</h2>
+              <p className="text-sm text-green-700 mb-4">Los condóminos ya pueden ver sus estados de cuenta.</p>
+              <button
+                onClick={() => navigate(`/admin/buildings/${id}`)}
+                className="px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700"
+              >
+                Volver al edificio
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-lg p-6 space-y-5">
+              <h2 className="text-lg font-semibold text-slate-800">Publicar estados de cuenta</h2>
+
+              {/* Summary */}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-500">Edificio</span>
+                  <span className="font-medium text-slate-800">{building?.name}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-500">Periodo</span>
+                  <span className="font-medium text-slate-800">{periodLabel}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-500">Modalidad agua</span>
+                  <span className="font-medium text-slate-800">{isIndividual ? 'Individual' : 'General'}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-500">Costo agua</span>
+                  <span className="font-medium text-slate-800">{formatMoney(period?.water_total_cost ?? 0)}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-500">Gastos ({expenses.length})</span>
+                  <span className="font-medium text-slate-800">{formatMoney(totalExpenses)}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-500">Departamentos</span>
+                  <span className="font-medium text-slate-800">{statements.length}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500">Total a cobrar</span>
+                  <span className="font-semibold text-slate-800">{formatMoney(statementTotals.totalDue)}</span>
+                </div>
+                {statementTotals.previousBalance > 0 && (
+                  <div className="flex justify-between py-1 text-amber-700">
+                    <span>Con saldo anterior</span>
+                    <span className="font-medium">{formatMoney(statementTotals.previousBalance)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Checklist */}
+              <div className="space-y-1.5">
+                <CheckItem ok={(period?.water_total_cost ?? 0) > 0} label="Lectura de agua registrada" />
+                <CheckItem ok={expenses.length > 0} label={`Gastos del mes registrados (${expenses.length})`} />
+                <CheckItem ok={statements.length > 0} label={`Prorrateo calculado (${statements.length} deptos)`} />
+                <CheckItem
+                  ok={
+                    statements.length > 0 &&
+                    Math.abs(statementTotals.water - (period?.water_total_cost ?? 0)) < 0.02 &&
+                    Math.abs(statementTotals.expenses - totalExpenses) < 0.02
+                  }
+                  label="Números cuadran"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-between pt-2 border-t border-slate-200">
+                <button
+                  onClick={() => setStep(3)}
+                  className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800"
+                >
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setShowConfirm(true)}
+                  disabled={
+                    (period?.water_total_cost ?? 0) <= 0 ||
+                    expenses.length === 0 ||
+                    statements.length === 0
+                  }
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  Publicar estados de cuenta
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Confirm dialog */}
+          {showConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="fixed inset-0 bg-black/40" onClick={() => setShowConfirm(false)} />
+              <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4">
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">Confirmar publicación</h3>
+                <p className="text-sm text-slate-600 mb-4">
+                  ¿Estás segura? Esta acción no se puede deshacer. Los estados de cuenta quedarán visibles para los condóminos.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowConfirm(false)}
+                    className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setShowConfirm(false)
+                      setSaving(true)
+                      const success = await publishPeriod()
+                      setSaving(false)
+                      if (success) {
+                        setCompletedSteps([1, 2, 3, 4])
+                        setPublished(true)
+                      }
+                    }}
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {saving ? 'Publicando...' : 'Sí, publicar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -708,6 +841,23 @@ function ExpenseRow({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
+    </div>
+  )
+}
+
+function CheckItem({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div className={`flex items-center gap-2 text-sm ${ok ? 'text-green-700' : 'text-red-600'}`}>
+      {ok ? (
+        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      )}
+      <span>{label}</span>
     </div>
   )
 }

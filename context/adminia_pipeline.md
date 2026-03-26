@@ -11,7 +11,7 @@ Producto SaaS vertical / herramienta interna web
 - **DoD:** Admin puede hacer login. Supabase tiene todas las tablas creadas. Deploy automático en Vercel funciona.
 
 ### Fase 2: Core Admin (Ciclo mensual del admin)
-- **Status:** EN PROGRESO (STORY-005 completada)
+- **Status:** EN PROGRESO (STORY-005 a STORY-010 completadas — wizard mensual completo)
 - **Objetivo:** Dashboard admin con el flujo completo: edificios, departamentos, lectura de agua, gastos, prorrateo automático, estados de cuenta
 - **DoD:** La dueña puede completar el ciclo de prorrateo para un edificio desde el dashboard. Estados de cuenta se generan automáticamente.
 

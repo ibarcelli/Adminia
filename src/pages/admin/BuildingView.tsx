@@ -4,12 +4,17 @@ import { supabase } from '../../lib/supabase'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import type { Building, PeriodStatus } from '../../types/database'
 
-const navItems = [
-  { label: 'Periodo mensual', path: 'period', description: 'Lectura de agua, gastos y prorrateo' },
-  { label: 'Conciliación', path: 'reconcile', description: 'Importar extracto y confirmar pagos' },
-  { label: 'Morosidad', path: 'arrears', description: 'Departamentos con saldo pendiente' },
-  { label: 'Configuración', path: 'settings', description: 'Datos del edificio y departamentos' },
-]
+function getNavItems(periodStatus: PeriodStatus | null) {
+  const periodLabel = periodStatus === 'published' || periodStatus === 'closed' ? 'Ver periodo' : 'Periodo mensual'
+  const periodDesc = periodStatus === 'published' ? 'Periodo publicado' : periodStatus === 'closed' ? 'Periodo cerrado' : 'Lectura de agua, gastos y prorrateo'
+
+  return [
+    { label: periodLabel, path: 'period', description: periodDesc },
+    { label: 'Conciliación', path: 'reconcile', description: 'Importar extracto y confirmar pagos' },
+    { label: 'Morosidad', path: 'arrears', description: 'Departamentos con saldo pendiente' },
+    { label: 'Configuración', path: 'settings', description: 'Datos del edificio y departamentos' },
+  ]
+}
 
 export function BuildingView() {
   const { id } = useParams<{ id: string }>()
@@ -67,7 +72,7 @@ export function BuildingView() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {navItems.map((item) => (
+        {getNavItems(periodStatus).map((item) => (
           <button
             key={item.path}
             onClick={() => navigate(`/admin/buildings/${id}/${item.path}`)}

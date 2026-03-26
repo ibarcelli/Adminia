@@ -228,6 +228,28 @@ export function usePeriod(buildingId: string | undefined) {
     }
   }
 
+  async function publishPeriod() {
+    if (!period) return false
+
+    setError(null)
+
+    const { error: updateError } = await supabase
+      .from('periods')
+      .update({
+        status: 'published',
+        published_at: new Date().toISOString(),
+      })
+      .eq('id', period.id)
+
+    if (updateError) {
+      setError(updateError.message)
+      return false
+    }
+
+    setPeriod({ ...period, status: 'published', published_at: new Date().toISOString() })
+    return true
+  }
+
   return {
     period,
     previousReading,
@@ -242,6 +264,7 @@ export function usePeriod(buildingId: string | undefined) {
     fetchUnitReadings,
     autoFillPreviousReadings,
     saveUnitReadings,
+    publishPeriod,
     refetch: fetchPeriod,
   }
 }
